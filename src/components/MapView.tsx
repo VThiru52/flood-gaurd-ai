@@ -128,14 +128,16 @@ function MapView() {
 
     if (heatLayerFactory) {
       const heatLayer = heatLayerFactory(heatData, {
-        radius: 40,
-        blur: 30,
+        radius: 25,
+        blur: 15,
         maxZoom: 17,
         max: 1.0,
+        minOpacity: 0.4,
         gradient: {
           0.0: "#22c55e",
-          0.3: "#eab308",
-          0.6: "#f97316",
+          0.25: "#84cc16",
+          0.5: "#eab308",
+          0.7: "#f97316",
           0.85: "#ef4444",
           1.0: "#dc2626",
         },

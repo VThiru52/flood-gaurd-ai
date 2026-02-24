@@ -1,7 +1,6 @@
 import AppSidebar from "@/components/AppSidebar";
 import TopBar from "@/components/TopBar";
 import StatsGrid from "@/components/StatsGrid";
-import MapView from "@/components/MapView";
 import AlertsPanel from "@/components/AlertsPanel";
 import WeatherCharts from "@/components/WeatherCharts";
 import DrainageNetwork from "@/components/DrainageNetwork";
@@ -16,10 +15,10 @@ const Index = () => {
           <StatsGrid />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2">
-              <MapView />
+              <AlertsPanel />
             </div>
             <div>
-              <AlertsPanel />
+              <DrainageNetwork />
             </div>
           </div>
           <WeatherCharts />
