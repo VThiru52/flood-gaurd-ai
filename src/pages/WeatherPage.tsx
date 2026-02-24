@@ -1,6 +1,7 @@
 import AppSidebar from "@/components/AppSidebar";
 import TopBar from "@/components/TopBar";
 import WeatherCharts from "@/components/WeatherCharts";
+import HistoricalRainfall from "@/components/HistoricalRainfall";
 import { useWeatherReadings } from "@/hooks/useFloodData";
 import { CloudRain, Thermometer, Droplets, Wind, Gauge } from "lucide-react";
 
@@ -49,6 +50,7 @@ const WeatherPage = () => {
           )}
 
           <WeatherCharts />
+          <HistoricalRainfall />
         </main>
       </div>
     </div>
