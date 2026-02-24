@@ -1,6 +1,7 @@
 import AppSidebar from "@/components/AppSidebar";
 import TopBar from "@/components/TopBar";
 import AlertsPanel from "@/components/AlertsPanel";
+import EarlyWarningPanel from "@/components/EarlyWarningPanel";
 import { useFloodAlerts } from "@/hooks/useFloodData";
 
 const monoFont = { fontFamily: "'JetBrains Mono', monospace" };
@@ -22,10 +23,10 @@ const AlertsPage = () => {
         <main className="flex-1 p-4 space-y-4 overflow-y-auto">
           <div className="glass-panel p-4">
             <h3 className="text-sm font-semibold text-foreground tracking-wide mb-2" style={monoFont}>
-              FLOOD ALERTS COMMAND CENTER
+              FLOOD ALERTS & EARLY WARNING
             </h3>
             <p className="text-xs text-muted-foreground">
-              Real-time alerts with database subscriptions · {alerts.length} active
+              Automated alerts from bottleneck detection, IDF threshold analysis, and encroachment monitoring · {alerts.length} active
             </p>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -36,6 +37,7 @@ const AlertsPage = () => {
               </div>
             ))}
           </div>
+          <EarlyWarningPanel />
           <AlertsPanel />
         </main>
       </div>
