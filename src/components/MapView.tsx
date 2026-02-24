@@ -3,6 +3,7 @@ import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
 import { useFloodZones } from "@/hooks/useFloodData";
+import { useTheme } from "@/hooks/useTheme";
 import { Loader2 } from "lucide-react";
 
 const monoFont = { fontFamily: "'JetBrains Mono', monospace" };
@@ -23,6 +24,7 @@ const riskRadius: Record<string, number> = {
 
 function MapView() {
   const { data: zones = [], isLoading } = useFloodZones();
+  const { theme } = useTheme();
   const criticalCount = zones.filter((z) => z.risk === "critical").length;
 
   const center = useMemo(() => {
@@ -34,8 +36,12 @@ function MapView() {
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
   const zoneLayerRef = useRef<L.LayerGroup | null>(null);
   const heatLayerRef = useRef<L.Layer | null>(null);
+
+
+  const isLightTheme = theme !== "dark";
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
@@ -45,19 +51,26 @@ function MapView() {
       attributionControl: true,
     }).setView(center, 13);
 
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+    const tileUrl = isLightTheme
+      ? "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+      : "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+
+    const tile = L.tileLayer(tileUrl, {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
     }).addTo(map);
+
+    tileLayerRef.current = tile;
 
     mapRef.current = map;
 
     return () => {
       map.remove();
       mapRef.current = null;
+      tileLayerRef.current = null;
       zoneLayerRef.current = null;
       heatLayerRef.current = null;
     };
-  }, [center]);
+  }, [center, isLightTheme]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -175,7 +188,7 @@ function MapView() {
         ))}
       </div>
 
-      <div ref={mapContainerRef} className="h-full w-full" style={{ background: "hsl(222, 47%, 7%)" }} />
+      <div ref={mapContainerRef} className="h-full w-full" style={{ background: isLightTheme ? "hsl(200, 20%, 95%)" : "hsl(222, 47%, 7%)" }} />
     </div>
   );
 }
