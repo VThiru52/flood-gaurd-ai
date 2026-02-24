@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, Map, AlertTriangle, CloudRain, 
   Database, Droplets, Shield, Menu, X,
@@ -6,18 +7,20 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { icon: <LayoutDashboard size={18} />, label: "Dashboard", active: true },
-  { icon: <Map size={18} />, label: "Map View" },
-  { icon: <AlertTriangle size={18} />, label: "Alerts" },
-  { icon: <CloudRain size={18} />, label: "Weather" },
-  { icon: <BarChart3 size={18} />, label: "Analytics" },
-  { icon: <Database size={18} />, label: "Data Sources" },
-  { icon: <FileText size={18} />, label: "Reports" },
-  { icon: <Shield size={18} />, label: "AI Models" },
+  { icon: <LayoutDashboard size={18} />, label: "Dashboard", path: "/" },
+  { icon: <Map size={18} />, label: "Map View", path: "/map" },
+  { icon: <AlertTriangle size={18} />, label: "Alerts", path: "/alerts" },
+  { icon: <CloudRain size={18} />, label: "Weather", path: "/weather" },
+  { icon: <BarChart3 size={18} />, label: "Analytics", path: "/analytics" },
+  { icon: <Database size={18} />, label: "Data Sources", path: "/data-sources" },
+  { icon: <FileText size={18} />, label: "Reports", path: "/reports" },
+  { icon: <Shield size={18} />, label: "AI Models", path: "/ai-models" },
 ];
 
 const AppSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   return (
     <aside
@@ -43,19 +46,23 @@ const AppSidebar = () => {
       </div>
 
       <nav className="flex-1 p-2 space-y-1">
-        {navItems.map((item) => (
-          <button
-            key={item.label}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-              item.active 
-                ? "bg-primary/10 text-primary border border-primary/20" 
-                : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-            }`}
-          >
-            {item.icon}
-            {!collapsed && <span className="font-medium">{item.label}</span>}
-          </button>
-        ))}
+        {navItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <button
+              key={item.label}
+              onClick={() => navigate(item.path)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                isActive
+                  ? "bg-primary/10 text-primary border border-primary/20" 
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              }`}
+            >
+              {item.icon}
+              {!collapsed && <span className="font-medium">{item.label}</span>}
+            </button>
+          );
+        })}
       </nav>
 
       <div className="p-3 border-t border-sidebar-border">
