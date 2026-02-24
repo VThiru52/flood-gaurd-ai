@@ -6,6 +6,8 @@ import IDFAnalysis from "@/components/IDFAnalysis";
 import AIPredictionPanel from "@/components/AIPredictionPanel";
 import HistoricalRainfall from "@/components/HistoricalRainfall";
 import PopulationPanel from "@/components/PopulationPanel";
+import FloodSimulator from "@/components/FloodSimulator";
+import EarlyWarningPanel from "@/components/EarlyWarningPanel";
 
 const monoFont = { fontFamily: "'JetBrains Mono', monospace" };
 
@@ -20,9 +22,11 @@ const AnalyticsPage = () => (
             FLOOD RISK ANALYTICS
           </h3>
           <p className="text-xs text-muted-foreground">
-            Dynamic data from database · IDF curves · AI predictions · Real-time drainage monitoring
+            Dynamic data from database · IDF curves · AI predictions · Flood simulation · Early warning · Real-time drainage monitoring
           </p>
         </div>
+        <FloodSimulator />
+        <EarlyWarningPanel />
         <AIPredictionPanel />
         <IDFAnalysis />
         <HistoricalRainfall />

@@ -1,15 +1,34 @@
+import { useState } from "react";
 import AppSidebar from "@/components/AppSidebar";
 import TopBar from "@/components/TopBar";
 import WeatherCharts from "@/components/WeatherCharts";
 import HistoricalRainfall from "@/components/HistoricalRainfall";
 import { useWeatherReadings } from "@/hooks/useFloodData";
-import { CloudRain, Thermometer, Droplets, Wind, Gauge } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { CloudRain, Thermometer, Droplets, Wind, Gauge, RefreshCw, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 const monoFont = { fontFamily: "'JetBrains Mono', monospace" };
 
 const WeatherPage = () => {
-  const { data: weather = [] } = useWeatherReadings();
+  const { data: weather = [], refetch } = useWeatherReadings();
   const latest = weather.length > 0 ? weather[weather.length - 1] : null;
+  const [fetching, setFetching] = useState(false);
+
+  const fetchLive = async () => {
+    setFetching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-weather");
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Live weather updated: ${data.current?.rainfall_mm_hr?.toFixed(1)} mm/hr`);
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to fetch weather");
+    } finally {
+      setFetching(false);
+    }
+  };
 
   const cards = latest ? [
     { label: "Rainfall", value: `${latest.rainfall_mm_hr.toFixed(1)} mm/hr`, icon: <CloudRain size={18} />, color: latest.rainfall_mm_hr > 80 ? "text-destructive" : "text-primary" },
@@ -25,14 +44,25 @@ const WeatherPage = () => {
       <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
         <TopBar />
         <main className="flex-1 p-4 space-y-4 overflow-y-auto">
-          <div className="glass-panel p-4">
-            <h3 className="text-sm font-semibold text-foreground tracking-wide mb-2" style={monoFont}>
-              WEATHER MONITORING
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Live weather data · {weather.length} readings · Real-time subscriptions
-              <span className="text-primary ml-1">● LIVE</span>
-            </p>
+          <div className="glass-panel p-4 flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground tracking-wide mb-2" style={monoFont}>
+                WEATHER MONITORING
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Live weather from Open-Meteo API · {weather.length} readings · Kadapa (14.47°N, 78.82°E)
+                <span className="text-primary ml-1">● LIVE</span>
+              </p>
+            </div>
+            <button
+              onClick={fetchLive}
+              disabled={fetching}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30 transition-all disabled:opacity-50 text-xs font-semibold"
+              style={monoFont}
+            >
+              {fetching ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+              FETCH LIVE DATA
+            </button>
           </div>
 
           {cards.length > 0 && (

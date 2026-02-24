@@ -99,7 +99,7 @@ export function useWeatherReadings() {
         .from("weather_readings")
         .select("*")
         .order("timestamp", { ascending: true })
-        .limit(50);
+        .limit(200);
       if (error) throw error;
       return data;
     },

@@ -5,3 +5,18 @@ verify_jwt = false
 
 [functions.s3-bridge]
 verify_jwt = false
+
+[functions.parse-xlsx]
+verify_jwt = false
+
+[functions.ingest-xlsx]
+verify_jwt = false
+
+[functions.flood-predict]
+verify_jwt = false
+
+[functions.fetch-weather]
+verify_jwt = false
+
+[functions.detect-bottlenecks]
+verify_jwt = false
