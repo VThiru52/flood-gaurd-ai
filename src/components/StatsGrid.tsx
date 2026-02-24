@@ -1,8 +1,8 @@
-import { 
-  Droplets, AlertTriangle, Activity, MapPin, 
-  CloudRain, Thermometer, Wind, Eye 
+import {
+  Droplets, AlertTriangle, Activity, MapPin,
+  CloudRain, Thermometer, Wind, Eye
 } from "lucide-react";
-import { kadapaStats } from "@/data/kadapaFloodData";
+import { useDashboardStats } from "@/hooks/useFloodData";
 
 interface StatCardProps {
   title: string;
@@ -41,25 +41,29 @@ const StatCard = ({ title, value, change, icon, trend, variant = "default" }: St
   </div>
 );
 
-const statsData: StatCardProps[] = [
-  { title: "Active Flood Zones", value: String(kadapaStats.activeFloodZones), change: `${kadapaStats.criticalZones} critical zones`, icon: <Droplets size={20} />, trend: "up", variant: "critical" },
-  { title: "Alerts Today", value: String(kadapaStats.alertsToday), change: `${kadapaStats.criticalAlerts} critical alerts`, icon: <AlertTriangle size={20} />, trend: "up", variant: "warning" },
-  { title: "Avg Drainage Cap.", value: `${kadapaStats.avgDrainageCapacity}%`, change: "Below design capacity", icon: <Activity size={20} />, trend: "up", variant: "warning" },
-  { title: "Zoning Categories", value: String(kadapaStats.monitoredZones), change: "10 DPZ + 2 DRZ + 1 sub", icon: <MapPin size={20} />, trend: "neutral", variant: "default" },
-  { title: "Peak 5yr (30min)", value: `${kadapaStats.maxIntensity5yr30min}`, change: "mm/hr — IDF 5-year", icon: <CloudRain size={20} />, trend: "up", variant: "critical" },
-  { title: "Peak 5yr (60min)", value: `${kadapaStats.maxIntensity5yr60min}`, change: "mm/hr — IDF 5-year", icon: <Thermometer size={20} />, trend: "up", variant: "warning" },
-  { title: "Design Rainfall", value: `${kadapaStats.designRainfall24h}`, change: "mm/hr — 5yr 20min", icon: <Wind size={20} />, trend: "up", variant: "default" },
-  { title: "IDF Curves", value: "4", change: "6m, 1yr, 2yr, 5yr", icon: <Eye size={20} />, trend: "neutral", variant: "success" },
-];
+const StatsGrid = () => {
+  const stats = useDashboardStats();
 
-const StatsGrid = () => (
-  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-    {statsData.map((stat, i) => (
-      <div key={stat.title} style={{ animationDelay: `${i * 50}ms` }}>
-        <StatCard {...stat} />
-      </div>
-    ))}
-  </div>
-);
+  const statsData: StatCardProps[] = [
+    { title: "Active Flood Zones", value: String(stats.activeFloodZones), change: `${stats.criticalZones} critical zones`, icon: <Droplets size={20} />, trend: "up", variant: "critical" },
+    { title: "Alerts Active", value: String(stats.alertsToday), change: `${stats.criticalAlerts} critical alerts`, icon: <AlertTriangle size={20} />, trend: "up", variant: "warning" },
+    { title: "Avg Drainage Cap.", value: `${stats.avgDrainageCapacity}%`, change: "Below design capacity", icon: <Activity size={20} />, trend: "up", variant: "warning" },
+    { title: "Monitored Zones", value: String(stats.monitoredZones), change: "Master Plan 2041", icon: <MapPin size={20} />, trend: "neutral", variant: "default" },
+    { title: "Current Rainfall", value: `${stats.currentRainfall.toFixed(1)}`, change: "mm/hr — Live", icon: <CloudRain size={20} />, trend: stats.currentRainfall > 50 ? "up" : "neutral", variant: stats.currentRainfall > 80 ? "critical" : stats.currentRainfall > 40 ? "warning" : "default" },
+    { title: "Peak Rainfall", value: `${stats.peakRainfall.toFixed(1)}`, change: "mm/hr — 6hr window", icon: <Thermometer size={20} />, trend: "up", variant: stats.peakRainfall > 100 ? "critical" : "warning" },
+    { title: "IDF Curves", value: "4", change: "6m, 1yr, 2yr, 5yr", icon: <Eye size={20} />, trend: "neutral", variant: "success" },
+    { title: "AI Predictions", value: "LIVE", change: "Gemini 3 Flash", icon: <Wind size={20} />, trend: "neutral", variant: "success" },
+  ];
+
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {statsData.map((stat, i) => (
+        <div key={stat.title} style={{ animationDelay: `${i * 50}ms` }}>
+          <StatCard {...stat} />
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export default StatsGrid;
