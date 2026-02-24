@@ -2,6 +2,7 @@ import {
   Droplets, AlertTriangle, Activity, MapPin, 
   CloudRain, Thermometer, Wind, Eye 
 } from "lucide-react";
+import { kadapaStats } from "@/data/kadapaFloodData";
 
 interface StatCardProps {
   title: string;
@@ -41,14 +42,14 @@ const StatCard = ({ title, value, change, icon, trend, variant = "default" }: St
 );
 
 const statsData: StatCardProps[] = [
-  { title: "Active Flood Zones", value: "12", change: "+3 since yesterday", icon: <Droplets size={20} />, trend: "up", variant: "critical" },
-  { title: "Alerts Today", value: "28", change: "+8 from avg", icon: <AlertTriangle size={20} />, trend: "up", variant: "warning" },
-  { title: "Drainage Flow", value: "73%", change: "Normal capacity", icon: <Activity size={20} />, trend: "neutral", variant: "default" },
-  { title: "Monitored Wards", value: "48", change: "3 wards critical", icon: <MapPin size={20} />, trend: "neutral", variant: "default" },
-  { title: "Rainfall (24h)", value: "142mm", change: "Heavy rainfall", icon: <CloudRain size={20} />, trend: "up", variant: "warning" },
-  { title: "Temperature", value: "28°C", change: "Stable", icon: <Thermometer size={20} />, trend: "neutral", variant: "success" },
-  { title: "Wind Speed", value: "24km/h", change: "Gusty", icon: <Wind size={20} />, trend: "up", variant: "default" },
-  { title: "Sensors Online", value: "156", change: "98% uptime", icon: <Eye size={20} />, trend: "neutral", variant: "success" },
+  { title: "Active Flood Zones", value: String(kadapaStats.activeFloodZones), change: `${kadapaStats.criticalZones} critical zones`, icon: <Droplets size={20} />, trend: "up", variant: "critical" },
+  { title: "Alerts Today", value: String(kadapaStats.alertsToday), change: `${kadapaStats.criticalAlerts} critical alerts`, icon: <AlertTriangle size={20} />, trend: "up", variant: "warning" },
+  { title: "Avg Drainage Cap.", value: `${kadapaStats.avgDrainageCapacity}%`, change: "Below design capacity", icon: <Activity size={20} />, trend: "up", variant: "warning" },
+  { title: "Zoning Categories", value: String(kadapaStats.monitoredZones), change: "10 DPZ + 2 DRZ + 1 sub", icon: <MapPin size={20} />, trend: "neutral", variant: "default" },
+  { title: "Peak 5yr (30min)", value: `${kadapaStats.maxIntensity5yr30min}`, change: "mm/hr — IDF 5-year", icon: <CloudRain size={20} />, trend: "up", variant: "critical" },
+  { title: "Peak 5yr (60min)", value: `${kadapaStats.maxIntensity5yr60min}`, change: "mm/hr — IDF 5-year", icon: <Thermometer size={20} />, trend: "up", variant: "warning" },
+  { title: "Design Rainfall", value: `${kadapaStats.designRainfall24h}`, change: "mm/hr — 5yr 20min", icon: <Wind size={20} />, trend: "up", variant: "default" },
+  { title: "IDF Curves", value: "4", change: "6m, 1yr, 2yr, 5yr", icon: <Eye size={20} />, trend: "neutral", variant: "success" },
 ];
 
 const StatsGrid = () => (
