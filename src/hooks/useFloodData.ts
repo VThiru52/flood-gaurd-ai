@@ -191,6 +191,36 @@ export function useSubdivisionPopulation() {
   });
 }
 
+// ─── Storm Frequency (IDF return period data) ───────────────
+export function useStormFrequency() {
+  return useQuery({
+    queryKey: ["storm_frequency"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("storm_frequency")
+        .select("*")
+        .order("intensity_threshold", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// ─── Ward Projections ────────────────────────────────────────
+export function useWardProjections() {
+  return useQuery({
+    queryKey: ["ward_projections"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ward_projections")
+        .select("*")
+        .order("growth_rate", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
 // ─── Data Ingestion Status ───────────────────────────────────
 export function useIngestionStatus() {
   return useQuery({

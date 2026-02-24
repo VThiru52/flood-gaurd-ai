@@ -45,6 +45,38 @@ async function signedFetch(method: string, urlStr: string, accessKey: string, se
   return fetch(urlStr, { method, headers: { ...headers, Authorization: `AWS4-HMAC-SHA256 Credential=${accessKey}/${credScope}, SignedHeaders=${signedHeaderKeys.join(";")}, Signature=${sig}` } });
 }
 
+// Parse one specific sheet from a file
+async function fetchSheet(fileKey: string, sheetName: string, accessKey: string, secretKey: string) {
+  const baseUrl = `https://${HOST}/storage/v1/s3`;
+  const fileUrl = `${baseUrl}/${BUCKET}/${encodeURIComponent(fileKey).replace(/%2F/g, "/")}`;
+  const res = await signedFetch("GET", fileUrl, accessKey, secretKey);
+  if (!res.ok) throw new Error(`S3 failed: ${res.status}`);
+  const ab = await res.arrayBuffer();
+  // Parse ONLY the target sheet - no row limit
+  const wb = XLSX.read(new Uint8Array(ab), { type: "array", sheets: sheetName });
+  const sheet = wb.Sheets[sheetName];
+  if (!sheet) throw new Error(`Sheet "${sheetName}" not found`);
+  return XLSX.utils.sheet_to_json(sheet, { defval: "" });
+}
+
+async function batchInsert(supabase: any, table: string, rows: any[], chunkSize = 50) {
+  let inserted = 0;
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    const chunk = rows.slice(i, i + chunkSize);
+    const { error } = await supabase.from(table).insert(chunk);
+    if (error) { console.error(`Insert error ${table}:`, error); throw error; }
+    inserted += chunk.length;
+  }
+  return inserted;
+}
+
+async function logIngestion(supabase: any, fileKey: string, sheetName: string, targetTable: string, rowCount: number) {
+  await supabase.from("data_ingestion_log").upsert({
+    file_key: fileKey, sheet_name: sheetName,
+    target_table: targetTable, rows_ingested: rowCount, status: "complete",
+  }, { onConflict: "file_key,sheet_name" });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -53,35 +85,27 @@ serve(async (req) => {
     const secretKey = Deno.env.get("EXTERNAL_S3_SECRET_KEY")!;
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    const { target } = await req.json().catch(() => ({ target: "all" }));
+    // Accept: { sheet: "rainfall" | "population" | "subdivision" | "idf_6m" | "idf_1y" | "idf_2y" | "idf_5y" | "ward" | "all", force: boolean }
+    const { sheet = "all", force = false } = await req.json().catch(() => ({ sheet: "all", force: false }));
     const results: Record<string, string> = {};
 
-    async function fetchFile(fileKey: string, sheetName: string, maxRows: number) {
-      const baseUrl = `https://${HOST}/storage/v1/s3`;
-      const fileUrl = `${baseUrl}/${BUCKET}/${encodeURIComponent(fileKey).replace(/%2F/g, "/")}`;
-      const res = await signedFetch("GET", fileUrl, accessKey, secretKey);
-      if (!res.ok) throw new Error(`S3 failed: ${res.status}`);
-      const ab = await res.arrayBuffer();
-      const wb = XLSX.read(new Uint8Array(ab), { type: "array", sheets: sheetName, sheetRows: maxRows + 5 });
-      return XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: "" });
+    async function shouldIngest(fileKey: string, sheetName: string): Promise<boolean> {
+      if (force) return true;
+      const { data } = await supabase.from("data_ingestion_log").select("id").eq("file_key", fileKey).eq("sheet_name", sheetName).single();
+      return !data;
     }
 
-    // --- Ingest Historical Rainfall from DRF-Ana ---
-    if (target === "all" || target === "rainfall") {
-      console.log("Ingesting rainfall data...");
-      // Check if already ingested
-      const { data: existing } = await supabase.from("data_ingestion_log").select("id").eq("file_key", "KadapaRainfall5.csv").eq("sheet_name", "DRF-Ana").single();
-      if (existing) {
-        results.rainfall = "already_ingested";
-      } else {
-        const raw = await fetchFile("KadapaRainfall5.csv", "DRF-Ana", 200);
+    // 1. DRF-Ana → historical_rainfall (ALL rows)
+    if (sheet === "all" || sheet === "rainfall") {
+      const fk = "KadapaRainfall5.csv", sn = "DRF-Ana";
+      if (await shouldIngest(fk, sn)) {
+        console.log("Ingesting DRF-Ana (all rows)...");
+        if (force) await supabase.from("historical_rainfall").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+        const raw = await fetchSheet(fk, sn, accessKey, secretKey);
         const rows = raw
           .filter((r: any) => r.Year && !isNaN(Number(r.Year)))
-          .slice(0, 200)
           .map((r: any) => ({
-            year: Number(r.Year),
-            month: Number(r.Month),
-            day: Number(r.Day),
+            year: Number(r.Year), month: Number(r.Month), day: Number(r.Day),
             daily_rainfall_mm: Number(r["Daily Rainfall in mm"]) || 0,
             intensity_5min: Number(r["Intensity in mm/hr for Duration in min"]) || 0,
             intensity_10min: Number(r.__EMPTY_9) || 0,
@@ -93,64 +117,41 @@ serve(async (req) => {
             intensity_120min: Number(r.__EMPTY_16) || 0,
             intensity_180min: Number(r.__EMPTY_17) || 0,
           }));
-
-        // Batch insert in chunks of 50
-        for (let i = 0; i < rows.length; i += 50) {
-          const chunk = rows.slice(i, i + 50);
-          const { error } = await supabase.from("historical_rainfall").insert(chunk);
-          if (error) { console.error("Rainfall insert error:", error); throw error; }
-        }
-
-        await supabase.from("data_ingestion_log").upsert({
-          file_key: "KadapaRainfall5.csv", sheet_name: "DRF-Ana",
-          target_table: "historical_rainfall", rows_ingested: rows.length, status: "complete",
-        }, { onConflict: "file_key,sheet_name" });
-
-        results.rainfall = `ingested_${rows.length}_rows`;
-      }
+        const n = await batchInsert(supabase, "historical_rainfall", rows);
+        await logIngestion(supabase, fk, sn, "historical_rainfall", n);
+        results.rainfall = `ingested_${n}_rows`;
+      } else { results.rainfall = "already_ingested"; }
     }
 
-    // --- Ingest Population Projections ---
-    if (target === "all" || target === "population") {
-      console.log("Ingesting population data...");
-      const { data: existing } = await supabase.from("data_ingestion_log").select("id").eq("file_key", "KadapaTownPopulationProjections.csv").eq("sheet_name", "population projections").single();
-      if (existing) {
-        results.population = "already_ingested";
-      } else {
-        const raw = await fetchFile("KadapaTownPopulationProjections.csv", "population projections", 100);
+    // 2. Population projections → population_data
+    if (sheet === "all" || sheet === "population") {
+      const fk = "KadapaTownPopulationProjections.csv", sn = "population projections";
+      if (await shouldIngest(fk, sn)) {
+        console.log("Ingesting population projections...");
+        if (force) await supabase.from("population_data").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+        const raw = await fetchSheet(fk, sn, accessKey, secretKey);
         const key = "POPULATION PROJECTIONS FOR KADAPA MUNICIPAL CORPORATION, Y.S.R. DIST., ANDHRA PRADESH STATE";
         const rows = raw
           .filter((r: any) => typeof r[key] === "number" && r.__EMPTY && !isNaN(Number(r.__EMPTY)))
           .map((r: any) => ({
-            year: Number(r.__EMPTY),
-            population: Number(r.__EMPTY_1) || 0,
-            increase: Number(r.__EMPTY_2) || 0,
-            percent_increase: Number(r.__EMPTY_3) || 0,
-            method: "census",
+            year: Number(r.__EMPTY), population: Number(r.__EMPTY_1) || 0,
+            increase: Number(r.__EMPTY_2) || 0, percent_increase: Number(r.__EMPTY_3) || 0, method: "census",
           }));
-
         if (rows.length > 0) {
-          const { error } = await supabase.from("population_data").insert(rows);
-          if (error) throw error;
+          const n = await batchInsert(supabase, "population_data", rows);
+          await logIngestion(supabase, fk, sn, "population_data", n);
+          results.population = `ingested_${n}_rows`;
         }
-
-        await supabase.from("data_ingestion_log").upsert({
-          file_key: "KadapaTownPopulationProjections.csv", sheet_name: "population projections",
-          target_table: "population_data", rows_ingested: rows.length, status: "complete",
-        }, { onConflict: "file_key,sheet_name" });
-
-        results.population = `ingested_${rows.length}_rows`;
-      }
+      } else { results.population = "already_ingested"; }
     }
 
-    // --- Ingest Sub-Division data ---
-    if (target === "all" || target === "subdivision") {
-      console.log("Ingesting subdivision data...");
-      const { data: existing } = await supabase.from("data_ingestion_log").select("id").eq("file_key", "KadapaTownPopulationProjections.csv").eq("sheet_name", "Sub Division wise").single();
-      if (existing) {
-        results.subdivision = "already_ingested";
-      } else {
-        const raw = await fetchFile("KadapaTownPopulationProjections.csv", "Sub Division wise", 200);
+    // 3. Sub Division wise → subdivision_population
+    if (sheet === "all" || sheet === "subdivision") {
+      const fk = "KadapaTownPopulationProjections.csv", sn = "Sub Division wise";
+      if (await shouldIngest(fk, sn)) {
+        console.log("Ingesting sub-division data...");
+        if (force) await supabase.from("subdivision_population").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+        const raw = await fetchSheet(fk, sn, accessKey, secretKey);
         const key = "Population Projection Sub-Division Wise in Kadapa Municipal Corporation";
         let lastDivision = "";
         const rows = raw
@@ -158,31 +159,83 @@ serve(async (req) => {
           .map((r: any) => {
             if (r[key] && String(r[key]).startsWith("Division")) lastDivision = String(r[key]);
             return {
-              division: r[key] || lastDivision,
-              sub_division: String(r.__EMPTY || ""),
-              households: Number(r.__EMPTY_1) || 0,
-              population: Number(r.__EMPTY_2) || 0,
+              division: r[key] || lastDivision, sub_division: String(r.__EMPTY || ""),
+              households: Number(r.__EMPTY_1) || 0, population: Number(r.__EMPTY_2) || 0,
               location: String(r.__EMPTY_3 || "").substring(0, 500),
-              area_sqkm: Number(r.__EMPTY_4) || 0,
-              density_per_sqkm: Number(r.__EMPTY_6) || 0,
-              pop_2025: Number(r.__EMPTY_10) || 0,
-              pop_2040: Number(r.__EMPTY_11) || 0,
-              pop_2055: Number(r.__EMPTY_12) || 0,
+              area_sqkm: Number(r.__EMPTY_4) || 0, density_per_sqkm: Number(r.__EMPTY_6) || 0,
+              pop_2025: Number(r.__EMPTY_10) || 0, pop_2040: Number(r.__EMPTY_11) || 0, pop_2055: Number(r.__EMPTY_12) || 0,
             };
           });
-
         if (rows.length > 0) {
-          const { error } = await supabase.from("subdivision_population").insert(rows);
-          if (error) throw error;
+          const n = await batchInsert(supabase, "subdivision_population", rows);
+          await logIngestion(supabase, fk, sn, "subdivision_population", n);
+          results.subdivision = `ingested_${n}_rows`;
         }
+      } else { results.subdivision = "already_ingested"; }
+    }
 
-        await supabase.from("data_ingestion_log").upsert({
-          file_key: "KadapaTownPopulationProjections.csv", sheet_name: "Sub Division wise",
-          target_table: "subdivision_population", rows_ingested: rows.length, status: "complete",
-        }, { onConflict: "file_key,sheet_name" });
-
-        results.subdivision = `ingested_${rows.length}_rows`;
+    // 4-7. IDF Return Period sheets → storm_frequency
+    const idfSheets = [
+      { sheet: "idf_6m", sheetName: "Once in 6months", returnPeriod: "6months" },
+      { sheet: "idf_1y", sheetName: "Once in a Year", returnPeriod: "1year" },
+      { sheet: "idf_2y", sheetName: "Once in 2Years", returnPeriod: "2years" },
+      { sheet: "idf_5y", sheetName: "Once in 5Years ", returnPeriod: "5years" },
+    ];
+    for (const idf of idfSheets) {
+      if (sheet === "all" || sheet === idf.sheet) {
+        const fk = "KadapaRainfall5.csv";
+        if (await shouldIngest(fk, idf.sheetName)) {
+          console.log(`Ingesting IDF: ${idf.sheetName}...`);
+          if (force) await supabase.from("storm_frequency").delete().eq("return_period", idf.returnPeriod);
+          const raw = await fetchSheet(fk, idf.sheetName, accessKey, secretKey);
+          const key = "Analysis of Frequecny of Storms";
+          const rows = raw
+            .filter((r: any) => typeof r[key] === "number" && r[key] > 0)
+            .map((r: any) => ({
+              return_period: idf.returnPeriod,
+              intensity_threshold: Number(r[key]),
+              duration_5min: Number(r.__EMPTY_1) || 0,
+              duration_10min: Number(r.__EMPTY_2) || 0,
+              duration_15min: Number(r.__EMPTY_3) || 0,
+              duration_20min: Number(r.__EMPTY_4) || 0,
+              duration_25min: Number(r.__EMPTY_5) || 0,
+              duration_30min: Number(r.__EMPTY_6) || 0,
+              duration_40min: Number(r.__EMPTY_7) || 0,
+              duration_50min: Number(r.__EMPTY_8) || 0,
+              duration_60min: Number(r.__EMPTY_9) || 0,
+              duration_75min: Number(r.__EMPTY_10) || 0,
+            }));
+          if (rows.length > 0) {
+            const n = await batchInsert(supabase, "storm_frequency", rows);
+            await logIngestion(supabase, fk, idf.sheetName, "storm_frequency", n);
+            results[idf.sheet] = `ingested_${n}_rows`;
+          }
+        } else { results[idf.sheet] = "already_ingested"; }
       }
+    }
+
+    // 8. Ward wise population census → ward_projections
+    if (sheet === "all" || sheet === "ward") {
+      const fk = "KadapaTownPopulationProjections.csv", sn = "ward wise population census";
+      if (await shouldIngest(fk, sn)) {
+        console.log("Ingesting ward projections...");
+        if (force) await supabase.from("ward_projections").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+        const raw = await fetchSheet(fk, sn, accessKey, secretKey);
+        const rows = raw
+          .filter((r: any) => typeof r["growth rate for "] === "number")
+          .map((r: any) => ({
+            growth_rate: Number(r["growth rate for "]) || 0,
+            base_population: Number(r.__EMPTY_8) || 0,
+            projected_2025: Number(r["2025"]) || 0,
+            projected_2040: Number(r["2040"]) || 0,
+            projected_2055: Number(r["2055"]) || 0,
+          }));
+        if (rows.length > 0) {
+          const n = await batchInsert(supabase, "ward_projections", rows);
+          await logIngestion(supabase, fk, sn, "ward_projections", n);
+          results.ward = `ingested_${n}_rows`;
+        }
+      } else { results.ward = "already_ingested"; }
     }
 
     console.log("Ingestion results:", results);
