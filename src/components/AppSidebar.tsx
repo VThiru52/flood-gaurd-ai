@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { 
-  LayoutDashboard, Map, AlertTriangle, CloudRain, 
+import {
+  LayoutDashboard, Map, AlertTriangle, CloudRain,
   Database, Droplets, Shield, Menu, X,
-  BarChart3, FileText
+  BarChart3, FileText, Brain
 } from "lucide-react";
 
 const navItems = [
@@ -12,9 +12,9 @@ const navItems = [
   { icon: <AlertTriangle size={18} />, label: "Alerts", path: "/alerts" },
   { icon: <CloudRain size={18} />, label: "Weather", path: "/weather" },
   { icon: <BarChart3 size={18} />, label: "Analytics", path: "/analytics" },
+  { icon: <Brain size={18} />, label: "AI Prediction", path: "/ai-models" },
   { icon: <Database size={18} />, label: "Data Sources", path: "/data-sources" },
   { icon: <FileText size={18} />, label: "Reports", path: "/reports" },
-  { icon: <Shield size={18} />, label: "AI Models", path: "/ai-models" },
 ];
 
 const AppSidebar = () => {
@@ -37,8 +37,8 @@ const AppSidebar = () => {
             <p className="text-[9px] text-muted-foreground tracking-widest">AI MONITORING</p>
           </div>
         )}
-        <button 
-          onClick={() => setCollapsed(!collapsed)} 
+        <button
+          onClick={() => setCollapsed(!collapsed)}
           className="ml-auto text-muted-foreground hover:text-foreground transition-colors p-1"
         >
           {collapsed ? <Menu size={16} /> : <X size={16} />}
@@ -54,7 +54,7 @@ const AppSidebar = () => {
               onClick={() => navigate(item.path)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
                 isActive
-                  ? "bg-primary/10 text-primary border border-primary/20" 
+                  ? "bg-primary/10 text-primary border border-primary/20"
                   : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               }`}
             >

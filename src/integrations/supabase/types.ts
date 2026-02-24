@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_predictions: {
+        Row: {
+          confidence: number
+          created_at: string
+          expires_at: string | null
+          id: string
+          model_used: string | null
+          prediction_data: Json | null
+          prediction_type: string
+          risk_score: number
+          summary: string | null
+          zone_id: string | null
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          model_used?: string | null
+          prediction_data?: Json | null
+          prediction_type: string
+          risk_score?: number
+          summary?: string | null
+          zone_id?: string | null
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          model_used?: string | null
+          prediction_data?: Json | null
+          prediction_type?: string
+          risk_score?: number
+          summary?: string | null
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_predictions_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "flood_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           created_at: string
@@ -50,6 +97,213 @@ export type Database = {
           parsed_content?: Json | null
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      drainage_segments: {
+        Row: {
+          capacity: number
+          catchment_area: string | null
+          created_at: string
+          design_return_period: string | null
+          id: string
+          length: string | null
+          name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number
+          catchment_area?: string | null
+          created_at?: string
+          design_return_period?: string | null
+          id?: string
+          length?: string | null
+          name: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number
+          catchment_area?: string | null
+          created_at?: string
+          design_return_period?: string | null
+          id?: string
+          length?: string | null
+          name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      flood_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string
+          id: string
+          is_active: boolean
+          location: string
+          message: string
+          resolved_at: string | null
+          severity: string
+          zone_code: string | null
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          location: string
+          message: string
+          resolved_at?: string | null
+          severity: string
+          zone_code?: string | null
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          location?: string
+          message?: string
+          resolved_at?: string | null
+          severity?: string
+          zone_code?: string | null
+        }
+        Relationships: []
+      }
+      flood_zones: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          lat: number
+          level: number
+          lng: number
+          name: string
+          risk: string
+          updated_at: string
+          zone_code: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          lat: number
+          level?: number
+          lng: number
+          name: string
+          risk: string
+          updated_at?: string
+          zone_code: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          lat?: number
+          level?: number
+          lng?: number
+          name?: string
+          risk?: string
+          updated_at?: string
+          zone_code?: string
+        }
+        Relationships: []
+      }
+      idf_records: {
+        Row: {
+          created_at: string
+          duration_min: number
+          id: string
+          intensity_1y: number | null
+          intensity_2y: number | null
+          intensity_5y: number | null
+          intensity_6m: number | null
+        }
+        Insert: {
+          created_at?: string
+          duration_min: number
+          id?: string
+          intensity_1y?: number | null
+          intensity_2y?: number | null
+          intensity_5y?: number | null
+          intensity_6m?: number | null
+        }
+        Update: {
+          created_at?: string
+          duration_min?: number
+          id?: string
+          intensity_1y?: number | null
+          intensity_2y?: number | null
+          intensity_5y?: number | null
+          intensity_6m?: number | null
+        }
+        Relationships: []
+      }
+      weather_readings: {
+        Row: {
+          humidity_pct: number | null
+          id: string
+          pressure_hpa: number | null
+          rainfall_mm_hr: number
+          source: string | null
+          temperature_c: number | null
+          timestamp: string
+          wind_direction: string | null
+          wind_speed_kmh: number | null
+        }
+        Insert: {
+          humidity_pct?: number | null
+          id?: string
+          pressure_hpa?: number | null
+          rainfall_mm_hr?: number
+          source?: string | null
+          temperature_c?: number | null
+          timestamp?: string
+          wind_direction?: string | null
+          wind_speed_kmh?: number | null
+        }
+        Update: {
+          humidity_pct?: number | null
+          id?: string
+          pressure_hpa?: number | null
+          rainfall_mm_hr?: number
+          source?: string | null
+          temperature_c?: number | null
+          timestamp?: string
+          wind_direction?: string | null
+          wind_speed_kmh?: number | null
+        }
+        Relationships: []
+      }
+      zone_categories: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          flood_relevance: string
+          id: string
+          name: string
+          zone_type: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          flood_relevance: string
+          id?: string
+          name: string
+          zone_type: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          flood_relevance?: string
+          id?: string
+          name?: string
+          zone_type?: string
         }
         Relationships: []
       }
