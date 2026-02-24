@@ -2,3 +2,6 @@ project_id = "gkocccaeevtmfvktbqmw"
 
 [functions.parse-document]
 verify_jwt = false
+
+[functions.s3-bridge]
+verify_jwt = false
