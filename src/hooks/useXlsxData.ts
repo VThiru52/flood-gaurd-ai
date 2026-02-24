@@ -39,7 +39,7 @@ export function useXlsxOverview(fileKey: string) {
   });
 }
 
-export function useXlsxSheet(fileKey: string, sheetName: string, maxRows = 500, enabled = true) {
+export function useXlsxSheet(fileKey: string, sheetName: string, maxRows = 200, enabled = true) {
   return useQuery<XlsxSheetData>({
     queryKey: ["xlsx-sheet", fileKey, sheetName, maxRows],
     queryFn: () => fetchXlsxSheet(fileKey, sheetName, maxRows),

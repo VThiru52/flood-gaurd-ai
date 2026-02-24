@@ -75,13 +75,13 @@ serve(async (req) => {
     const secretKey = Deno.env.get("EXTERNAL_S3_SECRET_KEY");
     if (!accessKey || !secretKey) throw new Error("S3 credentials not configured");
 
-    const { fileKey, sheetName, maxRows = 500 } = await req.json();
+    const { fileKey, sheetName, maxRows = 200 } = await req.json();
     if (!fileKey) throw new Error("fileKey is required");
 
     const baseUrl = `https://${HOST}/storage/v1/s3`;
     const fileUrl = `${baseUrl}/${BUCKET}/${encodeURIComponent(fileKey).replace(/%2F/g, "/")}`;
 
-    console.log(`Fetching file: ${fileKey}`);
+    console.log(`Fetching file: ${fileKey}, sheet: ${sheetName || "overview"}`);
     const res = await signedFetch("GET", fileUrl, accessKey, secretKey);
     if (!res.ok) {
       const errText = await res.text();
@@ -92,47 +92,41 @@ serve(async (req) => {
     const data = new Uint8Array(arrayBuffer);
     console.log(`File size: ${data.length} bytes`);
 
-    const workbook = XLSX.read(data, { type: "array" });
+    // Only parse specific sheet if requested to save CPU
+    if (sheetName) {
+      const workbook = XLSX.read(data, { type: "array", sheets: sheetName, sheetRows: maxRows + 5 });
+      const sheet = workbook.Sheets[sheetName];
+      if (!sheet) {
+        // If sheet not found, get sheet names only (lightweight)
+        const wb2 = XLSX.read(data, { type: "array", bookSheets: true });
+        throw new Error(`Sheet "${sheetName}" not found. Available: ${wb2.SheetNames.join(", ")}`);
+      }
+      const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+      const headers = json.length > 0 ? Object.keys(json[0] as object) : [];
+      const rows = json.slice(0, maxRows);
+
+      return new Response(
+        JSON.stringify({ fileKey, sheetName, headers, totalRows: json.length, returnedRows: rows.length, data: rows }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Overview mode: only get sheet names + first 3 rows per sheet
+    const workbook = XLSX.read(data, { type: "array", sheetRows: 6 });
     const sheetNames = workbook.SheetNames;
     console.log(`Sheets found: ${sheetNames.join(", ")}`);
 
-    // If no specific sheet requested, return sheet names + preview of each
-    if (!sheetName) {
-      const sheetsPreview: Record<string, { headers: string[]; rowCount: number; sampleRows: any[] }> = {};
-      for (const name of sheetNames) {
-        const sheet = workbook.Sheets[name];
-        const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-        const headers = json.length > 0 ? Object.keys(json[0] as object) : [];
-        sheetsPreview[name] = {
-          headers,
-          rowCount: json.length,
-          sampleRows: json.slice(0, 5),
-        };
-      }
-      return new Response(JSON.stringify({ fileKey, sheetNames, sheets: sheetsPreview }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const sheetsPreview: Record<string, { headers: string[]; rowCount: number; sampleRows: any[] }> = {};
+    for (const name of sheetNames) {
+      const sheet = workbook.Sheets[name];
+      const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+      const headers = json.length > 0 ? Object.keys(json[0] as object) : [];
+      sheetsPreview[name] = { headers, rowCount: json.length, sampleRows: json.slice(0, 3) };
     }
 
-    // Return specific sheet data
-    const sheet = workbook.Sheets[sheetName];
-    if (!sheet) throw new Error(`Sheet "${sheetName}" not found. Available: ${sheetNames.join(", ")}`);
-
-    const json = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-    const headers = json.length > 0 ? Object.keys(json[0] as object) : [];
-    const rows = json.slice(0, maxRows);
-
-    return new Response(
-      JSON.stringify({
-        fileKey,
-        sheetName,
-        headers,
-        totalRows: json.length,
-        returnedRows: rows.length,
-        data: rows,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ fileKey, sheetNames, sheets: sheetsPreview }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error: unknown) {
     console.error("XLSX parse error:", error);
     const msg = error instanceof Error ? error.message : "Unknown error";
