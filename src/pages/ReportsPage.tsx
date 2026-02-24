@@ -5,6 +5,8 @@ import { FileText, Download, Loader2, Brain } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useFloodZones, useDrainageSegments, useFloodAlerts, useWeatherReadings } from "@/hooks/useFloodData";
 import { toast } from "sonner";
+import PopulationPanel from "@/components/PopulationPanel";
+import HistoricalRainfall from "@/components/HistoricalRainfall";
 
 const monoFont = { fontFamily: "'JetBrains Mono', monospace" };
 
@@ -143,6 +145,10 @@ ${data.six_hour_forecast}
               </pre>
             </div>
           )}
+
+          {/* CSV Data Sections */}
+          <PopulationPanel compact />
+          <HistoricalRainfall />
         </main>
       </div>
     </div>

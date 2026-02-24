@@ -4,6 +4,8 @@ import WeatherCharts from "@/components/WeatherCharts";
 import DrainageNetwork from "@/components/DrainageNetwork";
 import IDFAnalysis from "@/components/IDFAnalysis";
 import AIPredictionPanel from "@/components/AIPredictionPanel";
+import HistoricalRainfall from "@/components/HistoricalRainfall";
+import PopulationPanel from "@/components/PopulationPanel";
 
 const monoFont = { fontFamily: "'JetBrains Mono', monospace" };
 
@@ -23,6 +25,8 @@ const AnalyticsPage = () => (
         </div>
         <AIPredictionPanel />
         <IDFAnalysis />
+        <HistoricalRainfall />
+        <PopulationPanel />
         <WeatherCharts />
         <DrainageNetwork />
       </main>
