@@ -54,9 +54,9 @@ const StatsGrid = () => {
     { title: "Active Flood Zones", value: String(stats.activeFloodZones), change: `${stats.criticalZones} critical zones`, icon: <Droplets size={20} />, trend: "up", variant: "critical" },
     { title: "Alerts Active", value: String(stats.alertsToday), change: `${stats.criticalAlerts} critical alerts`, icon: <AlertTriangle size={20} />, trend: "up", variant: "warning" },
     { title: "Avg Drainage Cap.", value: `${stats.avgDrainageCapacity}%`, change: "Below design capacity", icon: <Activity size={20} />, trend: "up", variant: "warning" },
-    { title: "Monitored Zones", value: String(stats.monitoredZones), change: "Master Plan 2041", icon: <MapPin size={20} />, trend: "neutral", variant: "default" },
+    { title: "Population (Census)", value: stats.latestPopulation ? `${(stats.latestPopulation / 1000).toFixed(0)}K` : "--", change: stats.populationYear ? `Census ${stats.populationYear}` : "No data", icon: <MapPin size={20} />, trend: "neutral", variant: "default" },
     { title: "Current Rainfall", value: `${stats.currentRainfall.toFixed(1)}`, change: "mm/hr — Live", icon: <CloudRain size={20} />, trend: stats.currentRainfall > 50 ? "up" : "neutral", variant: stats.currentRainfall > 80 ? "critical" : stats.currentRainfall > 40 ? "warning" : "default" },
-    { title: "Peak Rainfall", value: `${stats.peakRainfall.toFixed(1)}`, change: "mm/hr — 6hr window", icon: <Thermometer size={20} />, trend: "up", variant: stats.peakRainfall > 100 ? "critical" : "warning" },
+    { title: "Historical Max", value: `${Number(stats.historicalMaxRainfall).toFixed(1)}`, change: `mm/day · ${stats.totalRainfallRecords} records`, icon: <Thermometer size={20} />, trend: "up", variant: Number(stats.historicalMaxRainfall) > 100 ? "critical" : "warning" },
     { title: "IDF Curves", value: String(idfPeriodCount), change: idfPeriodCount > 0 ? "6m, 1yr, 2yr, 5yr" : "No data", icon: <Eye size={20} />, trend: "neutral", variant: "success" },
     { title: "AI Predictions", value: predictions.length > 0 ? String(predictions.length) : "0", change: predictions.length > 0 ? "Gemini 3 Flash · Active" : "Run prediction to start", icon: <Wind size={20} />, trend: "neutral", variant: predictions.length > 0 ? "success" : "default" },
   ];
