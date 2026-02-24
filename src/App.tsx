@@ -8,6 +8,7 @@ import AnalyticsPage from "./pages/AnalyticsPage";
 import DataSourcesPage from "./pages/DataSourcesPage";
 import ReportsPage from "./pages/ReportsPage";
 import AIModelsPage from "./pages/AIModelsPage";
+import DemoPage from "./pages/DemoPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
         <Route path="/data-sources" element={<DataSourcesPage />} />
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/ai-models" element={<AIModelsPage />} />
+        <Route path="/demo" element={<DemoPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
