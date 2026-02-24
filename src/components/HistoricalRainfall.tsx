@@ -1,36 +1,34 @@
-import { useXlsxSheet, parseRainfallDRF } from "@/hooks/useXlsxData";
+import { useHistoricalRainfall } from "@/hooks/useFloodData";
 import { Loader2, CloudRain } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useMemo } from "react";
 
 const monoFont = { fontFamily: "'JetBrains Mono', monospace" };
 
 const HistoricalRainfall = () => {
-  const { data: sheetData, isLoading, error } = useXlsxSheet("KadapaRainfall5.csv", "DRF-Ana", 500);
+  const { data: rainfall = [], isLoading } = useHistoricalRainfall();
 
   const { yearlyData, monthlyAvg } = useMemo(() => {
-    if (!sheetData?.data) return { yearlyData: [], monthlyAvg: [] };
-    const records = parseRainfallDRF(sheetData.data);
+    if (!rainfall.length) return { yearlyData: [], monthlyAvg: [] };
 
     // Yearly max rainfall
-    const byYear: Record<string, number> = {};
-    records.forEach((r) => {
-      const key = r.year;
-      byYear[key] = Math.max(byYear[key] || 0, r.dailyRainfall);
+    const byYear: Record<number, number> = {};
+    rainfall.forEach((r) => {
+      byYear[r.year] = Math.max(byYear[r.year] || 0, Number(r.daily_rainfall_mm));
     });
     const yearlyData = Object.entries(byYear)
       .map(([year, maxRainfall]) => ({ year, maxRainfall: Math.round(maxRainfall * 10) / 10 }))
       .sort((a, b) => a.year.localeCompare(b.year));
 
-    // Monthly average intensity
+    // Monthly average
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const byMonth: Record<string, { sum: number; count: number }> = {};
-    records.forEach((r) => {
-      const mi = parseInt(r.month) - 1;
+    rainfall.forEach((r) => {
+      const mi = r.month - 1;
       if (mi >= 0 && mi < 12) {
         const key = months[mi];
         if (!byMonth[key]) byMonth[key] = { sum: 0, count: 0 };
-        byMonth[key].sum += r.dailyRainfall;
+        byMonth[key].sum += Number(r.daily_rainfall_mm);
         byMonth[key].count++;
       }
     });
@@ -40,7 +38,7 @@ const HistoricalRainfall = () => {
     }));
 
     return { yearlyData, monthlyAvg };
-  }, [sheetData]);
+  }, [rainfall]);
 
   if (isLoading)
     return (
@@ -50,12 +48,7 @@ const HistoricalRainfall = () => {
       </div>
     );
 
-  if (error)
-    return (
-      <div className="glass-panel p-4 text-xs text-destructive">
-        Failed to load rainfall data: {(error as Error).message}
-      </div>
-    );
+  if (!rainfall.length) return null;
 
   return (
     <div className="space-y-4">
@@ -67,12 +60,11 @@ const HistoricalRainfall = () => {
           </h4>
         </div>
         <p className="text-[10px] text-muted-foreground" style={monoFont}>
-          Source: KadapaRainfall5.csv · DRF-Ana sheet · {sheetData?.totalRows ?? 0} records
+          Source: Database · {rainfall.length} records ingested from Kadapa autographic rainfall station
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Yearly Max Rainfall */}
         <div className="glass-panel p-4">
           <h5 className="text-[10px] font-semibold text-muted-foreground uppercase mb-3" style={monoFont}>
             Yearly Max Daily Rainfall (mm)
@@ -84,12 +76,7 @@ const HistoricalRainfall = () => {
                 <XAxis dataKey="year" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} interval={2} />
                 <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} />
                 <Tooltip
-                  contentStyle={{
-                    background: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                    fontSize: "11px",
-                  }}
+                  contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "11px" }}
                 />
                 <Bar dataKey="maxRainfall" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
               </BarChart>
@@ -97,7 +84,6 @@ const HistoricalRainfall = () => {
           </div>
         </div>
 
-        {/* Monthly Average */}
         <div className="glass-panel p-4">
           <h5 className="text-[10px] font-semibold text-muted-foreground uppercase mb-3" style={monoFont}>
             Monthly Avg Rainfall (mm)
@@ -109,12 +95,7 @@ const HistoricalRainfall = () => {
                 <XAxis dataKey="month" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} />
                 <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} />
                 <Tooltip
-                  contentStyle={{
-                    background: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                    fontSize: "11px",
-                  }}
+                  contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "11px" }}
                 />
                 <Bar dataKey="avgRainfall" fill="hsl(var(--chart-2))" radius={[2, 2, 0, 0]} />
               </BarChart>

@@ -1,32 +1,13 @@
-import { useXlsxSheet, parsePopulationProjections, parseSubDivisions } from "@/hooks/useXlsxData";
+import { usePopulationData, useSubdivisionPopulation } from "@/hooks/useFloodData";
 import { Loader2, Users, TrendingUp } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { useMemo } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const monoFont = { fontFamily: "'JetBrains Mono', monospace" };
 
 const PopulationPanel = ({ compact = false }: { compact?: boolean }) => {
-  const { data: popSheet, isLoading: loadingPop } = useXlsxSheet(
-    "KadapaTownPopulationProjections.csv",
-    "population projections",
-    100
-  );
-  const { data: subSheet, isLoading: loadingSub } = useXlsxSheet(
-    "KadapaTownPopulationProjections.csv",
-    "Sub Division wise",
-    200
-  );
-
-  const popData = useMemo(() => {
-    if (!popSheet?.data) return [];
-    return parsePopulationProjections(popSheet.data);
-  }, [popSheet]);
-
-  const subDivData = useMemo(() => {
-    if (!subSheet?.data) return [];
-    return parseSubDivisions(subSheet.data);
-  }, [subSheet]);
+  const { data: popData = [], isLoading: loadingPop } = usePopulationData();
+  const { data: subDivData = [], isLoading: loadingSub } = useSubdivisionPopulation();
 
   const isLoading = loadingPop || loadingSub;
 
@@ -37,6 +18,8 @@ const PopulationPanel = ({ compact = false }: { compact?: boolean }) => {
         <span className="text-xs">Loading population data...</span>
       </div>
     );
+
+  if (!popData.length && !subDivData.length) return null;
 
   const latestPop = popData.length > 0 ? popData[popData.length - 1] : null;
 
@@ -50,7 +33,7 @@ const PopulationPanel = ({ compact = false }: { compact?: boolean }) => {
           </h4>
         </div>
         <p className="text-[10px] text-muted-foreground" style={monoFont}>
-          Source: KadapaTownPopulationProjections.csv · Census + Projections
+          Source: Database · Census + Projections · {subDivData.length} sub-divisions
         </p>
       </div>
 
@@ -67,7 +50,7 @@ const PopulationPanel = ({ compact = false }: { compact?: boolean }) => {
             <div className="glass-panel p-3">
               <p className="text-[10px] text-muted-foreground uppercase" style={monoFont}>Growth Rate</p>
               <p className="text-xl font-bold text-primary" style={monoFont}>
-                {(latestPop.percentIncrease * 100).toFixed(1)}%
+                {(Number(latestPop.percent_increase) * 100).toFixed(1)}%
               </p>
             </div>
           </>
@@ -100,21 +83,10 @@ const PopulationPanel = ({ compact = false }: { compact?: boolean }) => {
                   tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`}
                 />
                 <Tooltip
-                  contentStyle={{
-                    background: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "8px",
-                    fontSize: "11px",
-                  }}
+                  contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "11px" }}
                   formatter={(v: number) => [v.toLocaleString(), "Population"]}
                 />
-                <Area
-                  type="monotone"
-                  dataKey="population"
-                  stroke="hsl(var(--primary))"
-                  fill="hsl(var(--primary) / 0.2)"
-                  strokeWidth={2}
-                />
+                <Area type="monotone" dataKey="population" stroke="hsl(var(--primary))" fill="hsl(var(--primary) / 0.2)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -135,21 +107,23 @@ const PopulationPanel = ({ compact = false }: { compact?: boolean }) => {
                   <TableHead className="text-[10px] text-right" style={monoFont}>Households</TableHead>
                   <TableHead className="text-[10px] text-right" style={monoFont}>Population</TableHead>
                   <TableHead className="text-[10px] text-right" style={monoFont}>Area (sq.km)</TableHead>
+                  <TableHead className="text-[10px] text-right" style={monoFont}>Density</TableHead>
                   <TableHead className="text-[10px] text-right" style={monoFont}>2025</TableHead>
                   <TableHead className="text-[10px] text-right" style={monoFont}>2040</TableHead>
                   <TableHead className="text-[10px] text-right" style={monoFont}>2055</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {subDivData.slice(0, 30).map((d, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="text-[10px] font-medium" style={monoFont}>{d.subDivision}</TableCell>
+                {subDivData.slice(0, 30).map((d) => (
+                  <TableRow key={d.id}>
+                    <TableCell className="text-[10px] font-medium" style={monoFont}>{d.sub_division}</TableCell>
                     <TableCell className="text-[10px] text-right" style={monoFont}>{d.households.toLocaleString()}</TableCell>
                     <TableCell className="text-[10px] text-right" style={monoFont}>{d.population.toLocaleString()}</TableCell>
-                    <TableCell className="text-[10px] text-right" style={monoFont}>{d.area}</TableCell>
-                    <TableCell className="text-[10px] text-right" style={monoFont}>{d.pop2025.toLocaleString()}</TableCell>
-                    <TableCell className="text-[10px] text-right" style={monoFont}>{d.pop2040.toLocaleString()}</TableCell>
-                    <TableCell className="text-[10px] text-right" style={monoFont}>{d.pop2055.toLocaleString()}</TableCell>
+                    <TableCell className="text-[10px] text-right" style={monoFont}>{Number(d.area_sqkm)}</TableCell>
+                    <TableCell className="text-[10px] text-right" style={monoFont}>{Number(d.density_per_sqkm).toLocaleString()}</TableCell>
+                    <TableCell className="text-[10px] text-right" style={monoFont}>{d.pop_2025.toLocaleString()}</TableCell>
+                    <TableCell className="text-[10px] text-right" style={monoFont}>{d.pop_2040.toLocaleString()}</TableCell>
+                    <TableCell className="text-[10px] text-right" style={monoFont}>{d.pop_2055.toLocaleString()}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

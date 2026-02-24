@@ -61,6 +61,36 @@ export type Database = {
           },
         ]
       }
+      data_ingestion_log: {
+        Row: {
+          file_key: string
+          id: string
+          ingested_at: string
+          rows_ingested: number | null
+          sheet_name: string
+          status: string | null
+          target_table: string
+        }
+        Insert: {
+          file_key: string
+          id?: string
+          ingested_at?: string
+          rows_ingested?: number | null
+          sheet_name: string
+          status?: string | null
+          target_table: string
+        }
+        Update: {
+          file_key?: string
+          id?: string
+          ingested_at?: string
+          rows_ingested?: number | null
+          sheet_name?: string
+          status?: string | null
+          target_table?: string
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           created_at: string
@@ -211,6 +241,60 @@ export type Database = {
         }
         Relationships: []
       }
+      historical_rainfall: {
+        Row: {
+          created_at: string
+          daily_rainfall_mm: number
+          day: number
+          id: string
+          intensity_10min: number | null
+          intensity_120min: number | null
+          intensity_15min: number | null
+          intensity_180min: number | null
+          intensity_30min: number | null
+          intensity_45min: number | null
+          intensity_5min: number | null
+          intensity_60min: number | null
+          intensity_90min: number | null
+          month: number
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          daily_rainfall_mm?: number
+          day: number
+          id?: string
+          intensity_10min?: number | null
+          intensity_120min?: number | null
+          intensity_15min?: number | null
+          intensity_180min?: number | null
+          intensity_30min?: number | null
+          intensity_45min?: number | null
+          intensity_5min?: number | null
+          intensity_60min?: number | null
+          intensity_90min?: number | null
+          month: number
+          year: number
+        }
+        Update: {
+          created_at?: string
+          daily_rainfall_mm?: number
+          day?: number
+          id?: string
+          intensity_10min?: number | null
+          intensity_120min?: number | null
+          intensity_15min?: number | null
+          intensity_180min?: number | null
+          intensity_30min?: number | null
+          intensity_45min?: number | null
+          intensity_5min?: number | null
+          intensity_60min?: number | null
+          intensity_90min?: number | null
+          month?: number
+          year?: number
+        }
+        Relationships: []
+      }
       idf_records: {
         Row: {
           created_at: string
@@ -238,6 +322,81 @@ export type Database = {
           intensity_2y?: number | null
           intensity_5y?: number | null
           intensity_6m?: number | null
+        }
+        Relationships: []
+      }
+      population_data: {
+        Row: {
+          created_at: string
+          id: string
+          increase: number | null
+          method: string | null
+          percent_increase: number | null
+          population: number
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          increase?: number | null
+          method?: string | null
+          percent_increase?: number | null
+          population?: number
+          year: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          increase?: number | null
+          method?: string | null
+          percent_increase?: number | null
+          population?: number
+          year?: number
+        }
+        Relationships: []
+      }
+      subdivision_population: {
+        Row: {
+          area_sqkm: number | null
+          created_at: string
+          density_per_sqkm: number | null
+          division: string
+          households: number | null
+          id: string
+          location: string | null
+          pop_2025: number | null
+          pop_2040: number | null
+          pop_2055: number | null
+          population: number | null
+          sub_division: string
+        }
+        Insert: {
+          area_sqkm?: number | null
+          created_at?: string
+          density_per_sqkm?: number | null
+          division: string
+          households?: number | null
+          id?: string
+          location?: string | null
+          pop_2025?: number | null
+          pop_2040?: number | null
+          pop_2055?: number | null
+          population?: number | null
+          sub_division: string
+        }
+        Update: {
+          area_sqkm?: number | null
+          created_at?: string
+          density_per_sqkm?: number | null
+          division?: string
+          households?: number | null
+          id?: string
+          location?: string | null
+          pop_2025?: number | null
+          pop_2040?: number | null
+          pop_2055?: number | null
+          population?: number | null
+          sub_division?: string
         }
         Relationships: []
       }

@@ -1,11 +1,13 @@
 import { useState, useCallback } from "react";
 import AppSidebar from "@/components/AppSidebar";
 import TopBar from "@/components/TopBar";
-import { Database, Upload, FileSpreadsheet, Globe, FileText, Loader2, Eye, RefreshCw, ExternalLink, FolderOpen } from "lucide-react";
+import { Database, Upload, FileSpreadsheet, Globe, FileText, Loader2, Eye, RefreshCw, ExternalLink, FolderOpen, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useIngestionStatus } from "@/hooks/useFloodData";
+import { toast } from "sonner";
 
 const monoFont = { fontFamily: "'JetBrains Mono', monospace" };
 
@@ -23,6 +25,8 @@ const DataSourcesPage = () => {
   const [uploading, setUploading] = useState(false);
   const [viewDoc, setViewDoc] = useState<any>(null);
   const [viewingPdf, setViewingPdf] = useState<string | null>(null);
+  const [ingesting, setIngesting] = useState(false);
+  const { data: ingestionLog = [] } = useIngestionStatus();
 
   // Fetch files from external S3 bucket via edge function
   const { data: bucketFiles = [], isLoading: loadingBucket, error: bucketError, refetch: refetchBucket } = useQuery({
@@ -220,6 +224,49 @@ const DataSourcesPage = () => {
               </div>
             </div>
           )}
+
+          {/* Ingest to DB button */}
+          <div className="glass-panel p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="text-xs font-semibold text-foreground" style={monoFont}>DATA INGESTION</h4>
+                <p className="text-[10px] text-muted-foreground">Parse XLSX files and save to database for use across all tabs</p>
+              </div>
+              <button
+                onClick={async () => {
+                  setIngesting(true);
+                  try {
+                    const { data, error } = await supabase.functions.invoke('ingest-xlsx', { body: { target: 'all' } });
+                    if (error) throw error;
+                    toast.success(`Ingestion complete: ${JSON.stringify(data?.results)}`);
+                    queryClient.invalidateQueries({ queryKey: ['data_ingestion_log'] });
+                    queryClient.invalidateQueries({ queryKey: ['historical_rainfall'] });
+                    queryClient.invalidateQueries({ queryKey: ['population_data'] });
+                    queryClient.invalidateQueries({ queryKey: ['subdivision_population'] });
+                  } catch (err: any) { toast.error(err.message); }
+                  finally { setIngesting(false); }
+                }}
+                disabled={ingesting}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 border border-primary/30 transition-all disabled:opacity-50 text-xs font-semibold"
+                style={monoFont}
+              >
+                {ingesting ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />}
+                {ingesting ? 'INGESTING...' : 'INGEST TO DB'}
+              </button>
+            </div>
+            {ingestionLog.length > 0 && (
+              <div className="space-y-1">
+                {ingestionLog.map((log: any) => (
+                  <div key={log.id} className="flex items-center gap-2 text-[10px]" style={monoFont}>
+                    <CheckCircle2 size={12} className="text-success" />
+                    <span className="text-muted-foreground">{log.file_key} → {log.target_table}</span>
+                    <span className="text-primary font-bold">{log.rows_ingested} rows</span>
+                    <span className="text-muted-foreground">({log.status})</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Upload button */}
           <label className="glass-panel p-4 w-full flex items-center justify-center gap-2 text-primary border-dashed border-2 border-primary/30 hover:bg-primary/5 transition-colors cursor-pointer">

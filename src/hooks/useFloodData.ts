@@ -146,6 +146,66 @@ export function useAIPredictions() {
   return query;
 }
 
+// ─── Historical Rainfall (from DB) ───────────────────────────
+export function useHistoricalRainfall() {
+  return useQuery({
+    queryKey: ["historical_rainfall"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("historical_rainfall")
+        .select("*")
+        .order("year", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// ─── Population Data (from DB) ───────────────────────────────
+export function usePopulationData() {
+  return useQuery({
+    queryKey: ["population_data"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("population_data")
+        .select("*")
+        .order("year", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// ─── Subdivision Population (from DB) ────────────────────────
+export function useSubdivisionPopulation() {
+  return useQuery({
+    queryKey: ["subdivision_population"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("subdivision_population")
+        .select("*")
+        .order("division", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// ─── Data Ingestion Status ───────────────────────────────────
+export function useIngestionStatus() {
+  return useQuery({
+    queryKey: ["data_ingestion_log"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("data_ingestion_log")
+        .select("*")
+        .order("ingested_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
 // ─── Dashboard Stats (computed from DB data) ─────────────────
 export function useDashboardStats() {
   const { data: zones } = useFloodZones();
@@ -153,6 +213,8 @@ export function useDashboardStats() {
   const { data: drains } = useDrainageSegments();
   const { data: categories } = useZoneCategories();
   const { data: weather } = useWeatherReadings();
+  const { data: rainfall } = useHistoricalRainfall();
+  const { data: population } = usePopulationData();
 
   const stats = {
     activeFloodZones: zones?.filter(z => z.risk === "critical" || z.risk === "high").length ?? 0,
@@ -165,6 +227,10 @@ export function useDashboardStats() {
     monitoredZones: categories?.length ?? 0,
     currentRainfall: weather?.length ? weather[weather.length - 1].rainfall_mm_hr : 0,
     peakRainfall: weather?.length ? Math.max(...weather.map(w => w.rainfall_mm_hr)) : 0,
+    historicalMaxRainfall: rainfall?.length ? Math.max(...rainfall.map(r => Number(r.daily_rainfall_mm))) : 0,
+    totalRainfallRecords: rainfall?.length ?? 0,
+    latestPopulation: population?.length ? population[population.length - 1].population : 0,
+    populationYear: population?.length ? population[population.length - 1].year : 0,
   };
 
   return stats;
