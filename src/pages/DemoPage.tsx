@@ -460,12 +460,58 @@ const slides: Slide[] = [
 
         <div className="glass-panel p-4 space-y-3">
           <h4 className="text-xs font-bold text-foreground flex items-center gap-2" style={monoFont}>
-            <Target size={14} className="text-destructive" /> HOW RISK SCORE IS DEFINED
+            <Target size={14} className="text-destructive" /> HOW RISK SCORE IS CALCULATED (EXACT FORMULA)
           </h4>
           <TalkingPoint>
-            "The 0-100 risk score is NOT a random number. The AI weighs: how close is current rainfall to the historical maximum? How many drains are at capacity? What's the population exposure in critical zones? Are IDF thresholds being exceeded? The result is: <strong>Critical (≥75)</strong>, <strong>High (50-74)</strong>, <strong>Medium (25-49)</strong>, <strong>Low (&lt;25)</strong>."
+            "The 0-100 risk score is NOT a random number. The AI receives <strong>real data from 8 tables</strong> and computes a <strong>weighted composite score</strong> using 4 measurable factors. Let me show you the exact formula..."
           </TalkingPoint>
-          <FormulaBlock label="Risk Score" formula="Score = f(rainfall, historicalMax, drainageCapacity, populationDensity, IDF_exceedance)" explanation="AI analyzes all factors holistically. Zone predictions show individual reasoning." />
+
+          <div className="rounded-lg bg-secondary/40 border border-border/30 p-4 space-y-3">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider" style={monoFont}>COMPOSITE RISK SCORE FORMULA</p>
+            <p className="text-sm font-bold text-primary leading-relaxed" style={monoFont}>
+              RiskScore = W₁ × R_factor + W₂ × D_factor + W₃ × P_factor + W₄ × IDF_factor
+            </p>
+            <div className="border-t border-border/20 pt-3 space-y-2">
+              <p className="text-[10px] text-foreground/80" style={monoFont}><strong className="text-primary">W₁ = 0.30</strong> (Rainfall Weight)</p>
+              <p className="text-[10px] text-foreground/60 ml-4">R_factor = (currentRainfall / historicalMax) × 100</p>
+              <p className="text-[10px] text-foreground/60 ml-4">Example: 45 mm/hr ÷ 159.8 mm/day = 28.2 → contributes 0.30 × 28.2 = <strong className="text-foreground">8.4</strong></p>
+
+              <p className="text-[10px] text-foreground/80" style={monoFont}><strong className="text-warning">W₂ = 0.25</strong> (Drainage Stress Weight)</p>
+              <p className="text-[10px] text-foreground/60 ml-4">D_factor = (1 − avgDrainageCapacity / 100) × 100</p>
+              <p className="text-[10px] text-foreground/60 ml-4">Example: avg capacity 52% → (1 − 0.52) × 100 = 48.0 → contributes 0.25 × 48.0 = <strong className="text-foreground">12.0</strong></p>
+
+              <p className="text-[10px] text-foreground/80" style={monoFont}><strong className="text-destructive">W₃ = 0.20</strong> (Population Vulnerability Weight)</p>
+              <p className="text-[10px] text-foreground/60 ml-4">P_factor = min(100, maxDensity / 200) </p>
+              <p className="text-[10px] text-foreground/60 ml-4">Example: densest area 18,692/sq.km → min(100, 18692/200) = 93.5 → contributes 0.20 × 93.5 = <strong className="text-foreground">18.7</strong></p>
+
+              <p className="text-[10px] text-foreground/80" style={monoFont}><strong className="text-primary">W₄ = 0.25</strong> (IDF Exceedance Weight)</p>
+              <p className="text-[10px] text-foreground/60 ml-4">IDF_factor = min(100, (currentRainfall / IDF_1yr_30min) × 100)</p>
+              <p className="text-[10px] text-foreground/60 ml-4">Example: 45 mm/hr ÷ 76.2 mm/hr = 59.1 → contributes 0.25 × 59.1 = <strong className="text-foreground">14.8</strong></p>
+            </div>
+            <div className="border-t border-border/20 pt-3">
+              <p className="text-xs font-bold text-foreground" style={monoFont}>
+                Total = 8.4 + 12.0 + 18.7 + 14.8 = <span className="text-primary text-sm">53.9 → HIGH RISK</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { range: "0–24", level: "LOW", color: "text-success" },
+              { range: "25–49", level: "MEDIUM", color: "text-warning" },
+              { range: "50–74", level: "HIGH", color: "text-flood-high" },
+              { range: "75–100", level: "CRITICAL", color: "text-destructive" },
+            ].map(r => (
+              <div key={r.level} className="p-2 rounded-lg bg-secondary/20 text-center">
+                <p className={`text-xs font-bold ${r.color}`} style={monoFont}>{r.level}</p>
+                <p className="text-[10px] text-muted-foreground">{r.range}</p>
+              </div>
+            ))}
+          </div>
+
+          <TalkingPoint>
+            "The AI model (Gemini 3 Flash) receives all this raw data and applies these weights internally. The <strong>tool-calling schema</strong> enforces that it returns a number 0-100. For zone-level predictions, it applies the same logic per-zone, factoring in each zone's specific drainage capacity and population density. The <strong>confidence score</strong> (0-1) reflects how much data was available — more recent weather readings = higher confidence."
+          </TalkingPoint>
         </div>
       </div>
     ),
