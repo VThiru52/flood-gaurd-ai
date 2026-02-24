@@ -1,7 +1,7 @@
-import { useEffect, useRef, useMemo } from "react";
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
-import L from "leaflet";
+import { useEffect, useMemo, useRef } from "react";
+import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet.heat";
 import { useFloodZones } from "@/hooks/useFloodData";
 import { Loader2 } from "lucide-react";
 
@@ -21,41 +21,6 @@ const riskRadius: Record<string, number> = {
   low: 7,
 };
 
-// Heatmap layer using leaflet.heat
-function HeatmapLayer({ zones }: { zones: any[] }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!zones.length) return;
-
-    const heatData = zones.map((z) => [
-      z.lat,
-      z.lng,
-      z.level / 100,
-    ]);
-
-    // @ts-ignore - leaflet.heat types
-    const heat = (L as any).heatLayer(heatData, {
-      radius: 40,
-      blur: 30,
-      maxZoom: 17,
-      max: 1.0,
-      gradient: {
-        0.0: "#22c55e",
-        0.3: "#eab308",
-        0.6: "#f97316",
-        0.85: "#ef4444",
-        1.0: "#dc2626",
-      },
-    });
-
-    heat.addTo(map);
-    return () => { map.removeLayer(heat); };
-  }, [map, zones]);
-
-  return null;
-}
-
 function MapView() {
   const { data: zones = [], isLoading } = useFloodZones();
   const criticalCount = zones.filter((z) => z.risk === "critical").length;
@@ -65,6 +30,107 @@ function MapView() {
     const avgLat = zones.reduce((s, z) => s + z.lat, 0) / zones.length;
     const avgLng = zones.reduce((s, z) => s + z.lng, 0) / zones.length;
     return [avgLat, avgLng] as [number, number];
+  }, [zones]);
+
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const zoneLayerRef = useRef<L.LayerGroup | null>(null);
+  const heatLayerRef = useRef<L.Layer | null>(null);
+
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    const map = L.map(mapContainerRef.current, {
+      zoomControl: false,
+      attributionControl: true,
+    }).setView(center, 13);
+
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+    }).addTo(map);
+
+    mapRef.current = map;
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      zoneLayerRef.current = null;
+      heatLayerRef.current = null;
+    };
+  }, [center]);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+    mapRef.current.setView(center, mapRef.current.getZoom(), { animate: false });
+  }, [center]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (zoneLayerRef.current) {
+      map.removeLayer(zoneLayerRef.current);
+      zoneLayerRef.current = null;
+    }
+
+    if (heatLayerRef.current) {
+      map.removeLayer(heatLayerRef.current);
+      heatLayerRef.current = null;
+    }
+
+    if (!zones.length) return;
+
+    const zoneLayer = L.layerGroup();
+
+    zones.forEach((zone) => {
+      const color = riskColors[zone.risk] || riskColors.medium;
+
+      const marker = L.circleMarker([zone.lat, zone.lng], {
+        radius: riskRadius[zone.risk] || 10,
+        color,
+        fillColor: color,
+        fillOpacity: 0.6,
+        weight: 2,
+      });
+
+      marker.bindPopup(`
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 12px; min-width: 180px; line-height: 1.4;">
+          <p style="font-weight: 700; font-size: 14px; margin: 0 0 4px 0;">${zone.name}</p>
+          <p style="margin: 2px 0;">Zone: <span style="color: hsl(187, 72%, 50%);">${zone.zone_code}</span></p>
+          <p style="margin: 2px 0;">Risk Level: <span style="font-weight: 700; text-transform: uppercase; color: ${color};">${zone.risk}</span></p>
+          <p style="margin: 2px 0;">Flood Index: <span style="font-weight: 700;">${zone.level}%</span></p>
+          <p style="margin: 2px 0; color: hsl(215, 20%, 55%);">${Number(zone.lat).toFixed(4)}°N, ${Number(zone.lng).toFixed(4)}°E</p>
+          ${zone.description ? `<p style="margin: 2px 0; color: hsl(215, 20%, 55%); font-style: italic;">${zone.description}</p>` : ""}
+        </div>
+      `);
+
+      zoneLayer.addLayer(marker);
+    });
+
+    zoneLayer.addTo(map);
+    zoneLayerRef.current = zoneLayer;
+
+    const heatData = zones.map((z) => [z.lat, z.lng, z.level / 100] as [number, number, number]);
+    const heatLayerFactory = (L as unknown as { heatLayer?: (data: [number, number, number][], options: Record<string, unknown>) => L.Layer }).heatLayer;
+
+    if (heatLayerFactory) {
+      const heatLayer = heatLayerFactory(heatData, {
+        radius: 40,
+        blur: 30,
+        maxZoom: 17,
+        max: 1.0,
+        gradient: {
+          0.0: "#22c55e",
+          0.3: "#eab308",
+          0.6: "#f97316",
+          0.85: "#ef4444",
+          1.0: "#dc2626",
+        },
+      });
+
+      heatLayer.addTo(map);
+      heatLayerRef.current = heatLayer;
+    }
   }, [zones]);
 
   if (isLoading) {
@@ -78,7 +144,6 @@ function MapView() {
 
   return (
     <div className="glass-panel relative overflow-hidden h-[500px] animate-fade-in">
-      {/* Overlay badges */}
       <div className="absolute top-3 left-3 z-[1000] flex items-center gap-2">
         <span
           className="px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-semibold border border-primary/30 backdrop-blur-md"
@@ -96,7 +161,6 @@ function MapView() {
         )}
       </div>
 
-      {/* Legend */}
       <div className="absolute bottom-3 left-3 z-[1000] flex items-center gap-3 px-3 py-2 rounded-lg bg-card/80 backdrop-blur-md border border-border/30">
         {[
           { label: "Critical", color: "#ef4444" },
@@ -111,45 +175,7 @@ function MapView() {
         ))}
       </div>
 
-      <MapContainer
-        center={center}
-        zoom={13}
-        className="h-full w-full"
-        style={{ background: "hsl(222, 47%, 7%)" }}
-        zoomControl={false}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-        />
-
-        <HeatmapLayer zones={zones} />
-
-        {zones.map((zone) => (
-          <CircleMarker
-            key={zone.id}
-            center={[zone.lat, zone.lng]}
-            radius={riskRadius[zone.risk] || 10}
-            pathOptions={{
-              color: riskColors[zone.risk],
-              fillColor: riskColors[zone.risk],
-              fillOpacity: 0.6,
-              weight: 2,
-            }}
-          >
-            <Popup>
-              <div className="text-xs space-y-1 min-w-[180px]" style={monoFont}>
-                <p className="font-bold text-sm">{zone.name}</p>
-                <p>Zone: <span className="text-primary">{zone.zone_code}</span></p>
-                <p>Risk Level: <span className="font-bold uppercase" style={{ color: riskColors[zone.risk] }}>{zone.risk}</span></p>
-                <p>Flood Index: <span className="font-bold">{zone.level}%</span></p>
-                <p className="text-muted-foreground">{zone.lat.toFixed(4)}°N, {zone.lng.toFixed(4)}°E</p>
-                {zone.description && <p className="text-muted-foreground italic">{zone.description}</p>}
-              </div>
-            </Popup>
-          </CircleMarker>
-        ))}
-      </MapContainer>
+      <div ref={mapContainerRef} className="h-full w-full" style={{ background: "hsl(222, 47%, 7%)" }} />
     </div>
   );
 }
