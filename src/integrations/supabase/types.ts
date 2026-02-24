@@ -355,6 +355,57 @@ export type Database = {
         }
         Relationships: []
       }
+      storm_frequency: {
+        Row: {
+          created_at: string
+          duration_10min: number | null
+          duration_15min: number | null
+          duration_20min: number | null
+          duration_25min: number | null
+          duration_30min: number | null
+          duration_40min: number | null
+          duration_50min: number | null
+          duration_5min: number | null
+          duration_60min: number | null
+          duration_75min: number | null
+          id: string
+          intensity_threshold: number
+          return_period: string
+        }
+        Insert: {
+          created_at?: string
+          duration_10min?: number | null
+          duration_15min?: number | null
+          duration_20min?: number | null
+          duration_25min?: number | null
+          duration_30min?: number | null
+          duration_40min?: number | null
+          duration_50min?: number | null
+          duration_5min?: number | null
+          duration_60min?: number | null
+          duration_75min?: number | null
+          id?: string
+          intensity_threshold: number
+          return_period: string
+        }
+        Update: {
+          created_at?: string
+          duration_10min?: number | null
+          duration_15min?: number | null
+          duration_20min?: number | null
+          duration_25min?: number | null
+          duration_30min?: number | null
+          duration_40min?: number | null
+          duration_50min?: number | null
+          duration_5min?: number | null
+          duration_60min?: number | null
+          duration_75min?: number | null
+          id?: string
+          intensity_threshold?: number
+          return_period?: string
+        }
+        Relationships: []
+      }
       subdivision_population: {
         Row: {
           area_sqkm: number | null
@@ -397,6 +448,36 @@ export type Database = {
           pop_2055?: number | null
           population?: number | null
           sub_division?: string
+        }
+        Relationships: []
+      }
+      ward_projections: {
+        Row: {
+          base_population: number | null
+          created_at: string
+          growth_rate: number
+          id: string
+          projected_2025: number | null
+          projected_2040: number | null
+          projected_2055: number | null
+        }
+        Insert: {
+          base_population?: number | null
+          created_at?: string
+          growth_rate?: number
+          id?: string
+          projected_2025?: number | null
+          projected_2040?: number | null
+          projected_2055?: number | null
+        }
+        Update: {
+          base_population?: number | null
+          created_at?: string
+          growth_rate?: number
+          id?: string
+          projected_2025?: number | null
+          projected_2040?: number | null
+          projected_2055?: number | null
         }
         Relationships: []
       }

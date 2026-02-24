@@ -1,7 +1,7 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar, Cell } from "recharts";
-import { useIDFRecords, useZoneCategories } from "@/hooks/useFloodData";
+import { useIDFRecords, useZoneCategories, useStormFrequency } from "@/hooks/useFloodData";
 import { Loader2 } from "lucide-react";
-import { idfCoefficients, stormFrequencyData } from "@/data/kadapaFloodData";
+import { idfCoefficients } from "@/data/kadapaFloodData";
 
 const monoFont = { fontFamily: "'JetBrains Mono', monospace" };
 
@@ -29,6 +29,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 const IDFAnalysis = () => {
   const { data: idfRecords = [], isLoading: loadingIDF } = useIDFRecords();
   const { data: zones = [], isLoading: loadingZones } = useZoneCategories();
+  const { data: stormData = [] } = useStormFrequency();
 
   const idfChartData = idfRecords.map(r => ({
     duration: r.duration_min,
@@ -36,6 +37,20 @@ const IDFAnalysis = () => {
     i1y: r.intensity_1y,
     i2y: r.intensity_2y,
     i5y: r.intensity_5y,
+  }));
+
+  // Group storm frequency data by return period for chart
+  const stormByPeriod = stormData.reduce((acc: Record<string, any[]>, row) => {
+    if (!acc[row.return_period]) acc[row.return_period] = [];
+    acc[row.return_period].push(row);
+    return acc;
+  }, {});
+
+  // Create storm frequency chart data - show 5min duration storm counts by return period
+  const stormChartData = Object.entries(stormByPeriod).map(([period, rows]) => ({
+    period: period === "6months" ? "6M" : period === "1year" ? "1Y" : period === "2years" ? "2Y" : "5Y",
+    totalStorms: rows.reduce((s, r) => s + (r.duration_5min || 0), 0),
+    avgStorms: Math.round(rows.reduce((s, r) => s + (r.duration_30min || 0), 0) / rows.length),
   }));
 
   if (loadingIDF) {
@@ -77,7 +92,7 @@ const IDFAnalysis = () => {
         )}
       </div>
 
-      {/* Coefficients + Storm Frequency */}
+      {/* Coefficients + Storm Frequency from DB */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="glass-panel p-4 animate-fade-in">
           <h3 className="text-sm font-semibold text-foreground tracking-wide mb-3" style={monoFont}>
@@ -102,22 +117,44 @@ const IDFAnalysis = () => {
           <h3 className="text-sm font-semibold text-foreground tracking-wide mb-3" style={monoFont}>
             STORM FREQUENCY (16-YEAR RECORD)
           </h3>
-          <p className="text-[10px] text-muted-foreground mb-3">Cumulative rainfall from PDF data</p>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={stormFrequencyData.slice(0, 8)}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(222, 30%, 18%)" />
-              <XAxis dataKey="durationMin" tick={{ fill: "hsl(215, 20%, 55%)", fontSize: 10 }} axisLine={{ stroke: "hsl(222, 30%, 18%)" }} />
-              <YAxis tick={{ fill: "hsl(215, 20%, 55%)", fontSize: 10 }} axisLine={{ stroke: "hsl(222, 30%, 18%)" }} />
-              <Tooltip formatter={(v: number) => [`${v} mm`, "Cumulative"]}
-                contentStyle={{ background: "hsl(222, 41%, 10%)", border: "1px solid hsl(222, 30%, 25%)", fontSize: 11 }}
-                labelStyle={{ color: "hsl(210, 40%, 92%)" }} />
-              <Bar dataKey="cumulativeRainfall" name="Cumulative (mm)" radius={[4, 4, 0, 0]}>
-                {stormFrequencyData.slice(0, 8).map((_, i) => (
-                  <Cell key={i} fill={`hsl(210, ${60 + i * 5}%, ${50 - i * 3}%)`} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <p className="text-[10px] text-muted-foreground mb-3">
+            {stormData.length > 0 ? `${stormData.length} records from database · 4 return periods` : "From PDF data"}
+          </p>
+          {stormData.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border/30">
+                    <th className="text-left py-1.5 px-2 text-muted-foreground" style={monoFont}>INTENSITY</th>
+                    <th className="text-right py-1.5 px-2" style={{ ...monoFont, color: periodColors["6 months"] }}>6M</th>
+                    <th className="text-right py-1.5 px-2" style={{ ...monoFont, color: periodColors["1 year"] }}>1Y</th>
+                    <th className="text-right py-1.5 px-2" style={{ ...monoFont, color: periodColors["2 years"] }}>2Y</th>
+                    <th className="text-right py-1.5 px-2" style={{ ...monoFont, color: periodColors["5 years"] }}>5Y</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Show unique intensity thresholds */}
+                  {[...new Set(stormData.map(s => s.intensity_threshold))].slice(0, 10).map(threshold => {
+                    const byPeriod = stormData.filter(s => s.intensity_threshold === threshold);
+                    const get30 = (period: string) => byPeriod.find(s => s.return_period === period)?.duration_30min ?? "-";
+                    return (
+                      <tr key={threshold} className="border-b border-border/10 hover:bg-secondary/20">
+                        <td className="py-1 px-2 text-foreground font-bold" style={monoFont}>{threshold} mm/hr</td>
+                        <td className="text-right py-1 px-2 text-foreground" style={monoFont}>{get30("6months")}</td>
+                        <td className="text-right py-1 px-2 text-foreground" style={monoFont}>{get30("1year")}</td>
+                        <td className="text-right py-1 px-2 text-foreground" style={monoFont}>{get30("2years")}</td>
+                        <td className="text-right py-1 px-2 text-foreground" style={monoFont}>{get30("5years")}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="h-[200px] flex items-center justify-center text-xs text-muted-foreground">
+              No storm frequency data — run ingestion from Data Sources
+            </div>
+          )}
         </div>
       </div>
 
