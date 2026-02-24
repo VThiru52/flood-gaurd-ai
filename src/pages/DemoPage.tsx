@@ -89,12 +89,12 @@ const slides: Slide[] = [
         </TalkingPoint>
 
         <TalkingPoint>
-          "Our solution brings <strong>AI + GIS + Real-time Data</strong> together. We have <strong>14 flood zones</strong> mapped, <strong>8 drainage segments</strong> with real capacity data, <strong>16 years of historical rainfall</strong> analyzed with IDF curves, and a <strong>live weather feed</strong> from the Open-Meteo API. Let me walk you through it tab by tab."
+          "Our solution brings <strong>AI + GIS + Real-time Data</strong> together. We have <strong>7 active flood zones</strong> (critical + high risk) out of 14 total mapped zones, <strong>8 drainage segments</strong> with real capacity data, <strong>16 years of historical rainfall</strong> analyzed with IDF curves, and a <strong>live weather feed</strong> from the Open-Meteo API. Let me walk you through it tab by tab."
         </TalkingPoint>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {[
-            { label: "Flood Zones", value: "14 mapped" },
+            { label: "Active Flood Zones", value: "7 active" },
             { label: "Drainage Segments", value: "8 real" },
             { label: "Historical Data", value: "16 years" },
             { label: "Database Tables", value: "12 tables" },
@@ -145,7 +145,7 @@ const slides: Slide[] = [
           </TalkingPoint>
           <div className="space-y-1.5">
             {[
-              { card: "Active Flood Zones (3)", source: "flood_zones table", logic: "Count WHERE risk = 'critical' OR 'high'" },
+              { card: "Active Flood Zones (7)", source: "flood_zones table", logic: "Count WHERE risk = 'critical' OR 'high'" },
               { card: "Alerts Active", source: "flood_alerts table", logic: "Count WHERE is_active = true" },
               { card: "Avg Drainage Capacity", source: "drainage_segments table", logic: "AVG(capacity) across all 8 segments" },
               { card: "Population", source: "population_data table", logic: "Latest census year row (2011)" },
@@ -207,7 +207,7 @@ const slides: Slide[] = [
               <Droplets size={12} /> LAYER 1: FLOOD HEATMAP
             </h4>
             <TalkingPoint>
-              "Each of the <strong>14 flood zones</strong> generates a heat point on the map. The intensity is calculated as <strong>zone.level / 100</strong> — so a zone with risk level 85 shows as intensity 0.85. Gradient goes green → yellow → red."
+              "Each of the <strong>14 total flood zones</strong> generates a heat point on the map (all risk levels shown). The <strong>7 active zones</strong> (critical + high) match the dashboard count. The intensity is calculated as <strong>zone.level / 100</strong> — so a zone with risk level 85 shows as intensity 0.85. Gradient goes green → yellow → red."
             </TalkingPoint>
             <FormulaBlock label="Heat Intensity" formula="intensity = zone.level / 100" explanation="Risk level 0-100 normalized to 0-1 for heatmap gradient" />
           </div>

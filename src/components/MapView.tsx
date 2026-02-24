@@ -311,7 +311,7 @@ function MapView() {
       {/* Top badges */}
       <div className="absolute top-3 left-3 z-[1000] flex items-center gap-2 flex-wrap">
         <span className="px-3 py-1 rounded-full bg-primary/20 text-primary text-xs font-semibold border border-primary/30 backdrop-blur-md" style={monoFont}>
-          KADAPA FLOOD MAP · {zones.length} ZONES
+          KADAPA FLOOD MAP · {zones.filter(z => z.risk === "critical" || z.risk === "high").length} ACTIVE ZONES
         </span>
         {criticalCount > 0 && (
           <span className="px-3 py-1 rounded-full bg-destructive/20 text-destructive text-xs font-semibold border border-destructive/30 flood-pulse backdrop-blur-md" style={monoFont}>
