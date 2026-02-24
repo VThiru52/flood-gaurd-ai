@@ -5,6 +5,7 @@ import {
   Database, Droplets, Shield, Menu, X,
   BarChart3, FileText, Brain
 } from "lucide-react";
+import ThemeSwitcher from "@/components/ThemeSwitcher";
 
 const navItems = [
   { icon: <LayoutDashboard size={18} />, label: "Dashboard", path: "/" },
@@ -65,8 +66,9 @@ const AppSidebar = () => {
         })}
       </nav>
 
-      <div className="p-3 border-t border-sidebar-border">
-        <div className="flex items-center gap-2">
+      <div className="border-t border-sidebar-border">
+        <ThemeSwitcher collapsed={collapsed} />
+        <div className="flex items-center gap-2 px-3 pb-3">
           <div className="w-2 h-2 rounded-full bg-success flood-pulse" />
           {!collapsed && (
             <span className="text-[10px] text-muted-foreground" style={{ fontFamily: "'JetBrains Mono', monospace" }}>SYSTEM ONLINE</span>
