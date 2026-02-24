@@ -105,24 +105,35 @@ ${data.six_hour_forecast}
           </div>
 
           {/* Data Summary */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="glass-panel p-3">
-              <p className="text-[10px] text-muted-foreground uppercase" style={monoFont}>Flood Zones</p>
-              <p className="text-2xl font-bold text-foreground" style={monoFont}>{zones.length}</p>
-            </div>
-            <div className="glass-panel p-3">
-              <p className="text-[10px] text-muted-foreground uppercase" style={monoFont}>Drains</p>
-              <p className="text-2xl font-bold text-foreground" style={monoFont}>{drains.length}</p>
-            </div>
-            <div className="glass-panel p-3">
-              <p className="text-[10px] text-muted-foreground uppercase" style={monoFont}>Active Alerts</p>
-              <p className="text-2xl font-bold text-foreground" style={monoFont}>{alerts.length}</p>
-            </div>
-            <div className="glass-panel p-3">
-              <p className="text-[10px] text-muted-foreground uppercase" style={monoFont}>Weather Points</p>
-              <p className="text-2xl font-bold text-foreground" style={monoFont}>{weather.length}</p>
-            </div>
-          </div>
+          {(() => {
+            const activeZones = zones.filter(z => z.risk === "critical" || z.risk === "high").length;
+            const criticalZones = zones.filter(z => z.risk === "critical").length;
+            const criticalAlerts = alerts.filter(a => a.severity === "critical").length;
+            return (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="glass-panel p-3">
+                  <p className="text-[10px] text-muted-foreground uppercase" style={monoFont}>Active Flood Zones</p>
+                  <p className="text-2xl font-bold text-foreground" style={monoFont}>{activeZones}</p>
+                  <p className="text-[10px] text-muted-foreground" style={monoFont}>{criticalZones} critical · {zones.length} total</p>
+                </div>
+                <div className="glass-panel p-3">
+                  <p className="text-[10px] text-muted-foreground uppercase" style={monoFont}>Drainage Segments</p>
+                  <p className="text-2xl font-bold text-foreground" style={monoFont}>{drains.length}</p>
+                  <p className="text-[10px] text-muted-foreground" style={monoFont}>Monitored network</p>
+                </div>
+                <div className="glass-panel p-3">
+                  <p className="text-[10px] text-muted-foreground uppercase" style={monoFont}>Active Alerts</p>
+                  <p className="text-2xl font-bold text-foreground" style={monoFont}>{alerts.length}</p>
+                  <p className="text-[10px] text-muted-foreground" style={monoFont}>{criticalAlerts} critical</p>
+                </div>
+                <div className="glass-panel p-3">
+                  <p className="text-[10px] text-muted-foreground uppercase" style={monoFont}>Weather Readings</p>
+                  <p className="text-2xl font-bold text-foreground" style={monoFont}>{weather.length}</p>
+                  <p className="text-[10px] text-muted-foreground" style={monoFont}>Live data points</p>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Report Content */}
           {report && (
