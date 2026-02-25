@@ -50,15 +50,19 @@ serve(async (req) => {
 You analyze real-time AND historical hydrological data including IDF curves, drainage capacity, weather readings, flood zone levels, 
 historical rainfall patterns, population density, and urban growth projections.
 
-Your task: Analyze all conditions and provide:
+Your task: Analyze all conditions and provide MULTI-HORIZON predictions:
 1. Overall flood risk assessment (0-100 score) based on current + historical patterns
 2. Risk predictions for each critical zone, considering population density and drainage capacity
 3. Specific actionable recommendations referencing historical precedents
-4. 6-hour forecast with confidence intervals
+4. THREE forecast horizons:
+   - 6-HOUR: Immediate threat assessment based on current rainfall trends and drainage saturation
+   - 24-HOUR: Short-term prediction based on weather patterns, pressure systems, humidity trends
+   - 72-HOUR (3-DAY): Extended outlook based on seasonal patterns, historical rainfall cycles, upstream conditions
 5. High-density population areas at greatest risk
 
 Be data-driven. Reference specific numbers from historical rainfall, population density, and current conditions.
-Consider that areas with high population density + poor drainage + historical heavy rainfall = highest risk.`;
+Consider that areas with high population density + poor drainage + historical heavy rainfall = highest risk.
+For each time horizon, specify: risk level change, expected rainfall range, and key triggers to watch.`;
 
     const userPrompt = `CURRENT CONDITIONS (${new Date().toISOString()}):
 
@@ -137,10 +141,12 @@ Provide your comprehensive analysis considering historical patterns, population 
                     type: "array",
                     items: { type: "string" },
                   },
-                  six_hour_forecast: { type: "string" },
+                  six_hour_forecast: { type: "string", description: "6-hour immediate threat forecast" },
+                  twenty_four_hour_forecast: { type: "string", description: "24-hour short-term prediction with expected rainfall range" },
+                  seventy_two_hour_forecast: { type: "string", description: "72-hour (3-day) extended outlook based on seasonal and upstream patterns" },
                   confidence: { type: "number", description: "0-1 confidence score" },
                 },
-                required: ["overall_risk_score", "risk_level", "summary", "zone_predictions", "recommendations", "six_hour_forecast", "confidence"],
+                required: ["overall_risk_score", "risk_level", "summary", "zone_predictions", "recommendations", "six_hour_forecast", "twenty_four_hour_forecast", "seventy_two_hour_forecast", "confidence"],
               },
             },
           },
@@ -181,6 +187,8 @@ Provide your comprehensive analysis considering historical patterns, population 
         zone_predictions: [],
         recommendations: ["Monitor river levels closely", "Keep drainage clear"],
         six_hour_forecast: "Continued monitoring required.",
+        twenty_four_hour_forecast: "Weather patterns suggest stable conditions over next 24 hours.",
+        seventy_two_hour_forecast: "Extended outlook based on seasonal trends — monitor upstream conditions.",
         confidence: 0.7,
       };
     }
