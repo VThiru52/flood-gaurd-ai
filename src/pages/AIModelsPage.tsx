@@ -13,7 +13,7 @@ const AIModelsPage = () => (
         <div className="glass-panel p-4">
           <h3 className="text-sm font-semibold text-foreground tracking-wide mb-2" style={monoFont}>AI FLOOD GUARD</h3>
           <p className="text-xs text-muted-foreground">
-            Real-time AI-powered flood risk prediction · Gemini 3 Flash · Analyzes IDF, drainage, weather & zone data
+            Real-time AI-powered flood risk prediction · HARYAK AI · Analyzes IDF, drainage, weather & zone data
           </p>
         </div>
         <AIPredictionPanel />

@@ -91,7 +91,7 @@ const AIPredictionPanel = () => {
           </button>
         </div>
         <p className="text-[10px] text-muted-foreground">
-          Powered by Gemini 3 Flash · Analyzes IDF curves, drainage capacity, weather data, and flood zones in real-time
+          Powered by HARYAK AI · Analyzes IDF curves, drainage capacity, weather data, and flood zones in real-time
         </p>
         <div className="mt-3 rounded-lg bg-secondary/30 border border-border/20 p-3 space-y-1.5">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider" style={monoFont}>RISK SCORE FORMULA</p>

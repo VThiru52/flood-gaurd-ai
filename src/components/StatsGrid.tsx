@@ -58,7 +58,7 @@ const StatsGrid = () => {
     { title: "Current Rainfall", value: `${stats.currentRainfall.toFixed(1)}`, change: "mm/hr — Live", icon: <CloudRain size={20} />, trend: stats.currentRainfall > 50 ? "up" : "neutral", variant: stats.currentRainfall > 80 ? "critical" : stats.currentRainfall > 40 ? "warning" : "default" },
     { title: "Historical Max", value: `${Number(stats.historicalMaxRainfall).toFixed(1)}`, change: `mm/day · ${stats.totalRainfallRecords} records`, icon: <Thermometer size={20} />, trend: "up", variant: Number(stats.historicalMaxRainfall) > 100 ? "critical" : "warning" },
     { title: "IDF Curves", value: String(idfPeriodCount), change: idfPeriodCount > 0 ? "6m, 1yr, 2yr, 5yr" : "No data", icon: <Eye size={20} />, trend: "neutral", variant: "success" },
-    { title: "AI Predictions", value: predictions.length > 0 ? String(predictions.length) : "0", change: predictions.length > 0 ? "Gemini 3 Flash · Active" : "Run prediction to start", icon: <Wind size={20} />, trend: "neutral", variant: predictions.length > 0 ? "success" : "default" },
+    { title: "AI Predictions", value: predictions.length > 0 ? String(predictions.length) : "0", change: predictions.length > 0 ? "HARYAK AI · Active" : "Run prediction to start", icon: <Wind size={20} />, trend: "neutral", variant: predictions.length > 0 ? "success" : "default" },
   ];
 
   return (

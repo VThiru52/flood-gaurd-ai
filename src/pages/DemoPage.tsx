@@ -99,7 +99,7 @@ const slides: Slide[] = [
             { label: "Historical Data", value: "16 years" },
             { label: "Database Tables", value: "12 tables" },
             { label: "Edge Functions", value: "5 backend" },
-            { label: "AI Model", value: "Gemini 3 Flash" },
+            { label: "AI Model", value: "HARYAK AI" },
             { label: "Weather API", value: "Open-Meteo" },
             { label: "IDF Return Periods", value: "6m, 1y, 2y, 5y" },
           ].map(s => (
@@ -411,7 +411,7 @@ const slides: Slide[] = [
               { step: "1", text: "Backend function flood-predict is invoked" },
               { step: "2", text: "It fetches ALL data from 8 database tables simultaneously (parallel queries)" },
               { step: "3", text: "Builds a comprehensive prompt: current weather, 16-year historical rainfall, population data, drainage capacity, IDF thresholds, active alerts" },
-              { step: "4", text: "Sends everything to Google Gemini 3 Flash AI model via Lovable AI Gateway" },
+              { step: "4", text: "Sends everything to Google HARYAK AI model via Lovable AI Gateway" },
               { step: "5", text: "Uses TOOL CALLING (structured JSON output) — NOT free-text — to get a strict schema response" },
               { step: "6", text: "Stores the prediction in ai_predictions table with 6-hour expiry" },
               { step: "7", text: "Returns structured result to the frontend for display" },
