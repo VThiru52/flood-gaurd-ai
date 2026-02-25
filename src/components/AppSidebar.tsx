@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard, Map, AlertTriangle, CloudRain,
   Database, Droplets, Shield, Menu, X,
-  BarChart3, FileText, Brain, Play
+  BarChart3, FileText, Brain, Play, Presentation
 } from "lucide-react";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 
@@ -17,6 +17,7 @@ const navItems = [
   { icon: <Database size={18} />, label: "Data Sources", path: "/data-sources" },
   { icon: <FileText size={18} />, label: "Reports", path: "/reports" },
   { icon: <Play size={18} />, label: "Demo", path: "/demo" },
+  { icon: <Presentation size={18} />, label: "PPT", path: "/ppt" },
 ];
 
 const AppSidebar = () => {
