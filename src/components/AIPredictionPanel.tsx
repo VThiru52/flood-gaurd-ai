@@ -39,6 +39,8 @@ interface Prediction {
   }>;
   recommendations: string[];
   six_hour_forecast: string;
+  twenty_four_hour_forecast?: string;
+  seventy_two_hour_forecast?: string;
   confidence: number;
 }
 
@@ -155,7 +157,7 @@ const AIPredictionPanel = () => {
             </div>
           )}
 
-          {/* Recommendations + Forecast */}
+          {/* Recommendations + Multi-Horizon Forecast */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {active.recommendations?.length > 0 && (
               <div className="glass-panel p-4 animate-fade-in">
@@ -180,10 +182,32 @@ const AIPredictionPanel = () => {
               <div className="flex items-center gap-2 mb-3">
                 <AlertTriangle size={14} className="text-warning" />
                 <h4 className="text-xs font-semibold text-foreground tracking-wide" style={monoFont}>
-                  6-HOUR FORECAST
+                  PREDICTION TIME HORIZONS
                 </h4>
               </div>
-              <p className="text-xs text-foreground/80 leading-relaxed">{active.six_hour_forecast}</p>
+              <div className="space-y-3">
+                <div className="p-3 rounded-lg bg-destructive/5 border border-destructive/20">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-destructive/20 text-destructive uppercase" style={monoFont}>6 HOURS</span>
+                    <span className="text-[10px] text-muted-foreground">Immediate threat</span>
+                  </div>
+                  <p className="text-xs text-foreground/80 leading-relaxed">{active.six_hour_forecast}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-warning/5 border border-warning/20">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-warning/20 text-warning uppercase" style={monoFont}>24 HOURS</span>
+                    <span className="text-[10px] text-muted-foreground">Short-term outlook</span>
+                  </div>
+                  <p className="text-xs text-foreground/80 leading-relaxed">{active.twenty_four_hour_forecast || "Run prediction to generate 24-hour forecast."}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-primary/20 text-primary uppercase" style={monoFont}>72 HOURS (3 DAYS)</span>
+                    <span className="text-[10px] text-muted-foreground">Extended forecast</span>
+                  </div>
+                  <p className="text-xs text-foreground/80 leading-relaxed">{active.seventy_two_hour_forecast || "Run prediction to generate 72-hour forecast."}</p>
+                </div>
+              </div>
             </div>
           </div>
         </>
